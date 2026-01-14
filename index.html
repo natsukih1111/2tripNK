@@ -690,8 +690,8 @@
   // =========================
   // Supabase 設定（使う場合だけ入れる）
   // =========================
-  const SUPABASE_URL = "";        // 例: "https://xxxx.supabase.co"
-  const SUPABASE_ANON_KEY = "";   // 例: "eyJhbGciOiJIUzI1NiIsInR..."
+  const SUPABASE_URL = "https://wrdxpnsevzlbbnwqjdwf.supabase.co";        // 例: "https://xxxx.supabase.co"
+  const SUPABASE_ANON_KEY = "sb_publishable_j0ELdUy642C8My25peJXpg_MOzrTXS0";   // 例: "eyJhbGciOiJIUzI1NiIsInR..."
   const SHARE_TABLE = "trip_docs";
 
   // =========================
@@ -786,6 +786,8 @@
     tabs.style.display = "none";
     document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行のしおり";
     document.getElementById("headerSub").textContent = "トップページ";
+closeFooterMenu();
+
   }
   function showSg(){
     viewTop.classList.remove("active");
@@ -794,6 +796,8 @@
     document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行プラン";
     document.getElementById("headerSub").textContent = "シンガポール旅行（2026/02/07〜02/14）";
     activateTab("day");
+closeFooterMenu();
+
   }
 
   document.getElementById("goSingaporeBtn").addEventListener("click", showSg);
@@ -812,6 +816,8 @@
 
     if(key==="map") renderMap();
     if(key==="mrt") renderMrtUi();
+closeFooterMenu();
+
   }
   tabs.addEventListener("click", (e)=>{
     const t = e.target.closest(".tab");
@@ -822,9 +828,37 @@
   // =========================
   // Footer menu toggle
   // =========================
-  document.getElementById("toggleFooterBtn").addEventListener("click", ()=>{
-    document.getElementById("footerBody").classList.toggle("hidden");
-  });
+
+function closeFooterMenu(){
+  if(!footerBody) return;
+  footerBody.classList.add("hidden");
+}
+
+function openFooterMenu(){
+  if(!footerBody) return;
+  footerBody.classList.remove("hidden");
+}
+
+// 既存のトグルはこれに置き換え
+toggleFooterBtn.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  footerBody.classList.toggle("hidden");
+});
+
+// メニュー外をタップしたら閉じる（これが効く）
+document.addEventListener("click", (e)=>{
+  const footer = document.querySelector(".footerbar");
+  if(!footer) return;
+  if(footer.contains(e.target)) return; // フッター内クリックは無視
+  closeFooterMenu();
+});
+
+// スクロールしたら閉じる（旅行中これが便利）
+window.addEventListener("scroll", ()=>{
+  closeFooterMenu();
+}, { passive:true });
+
+
 
   // =========================
   // Photo panel toggle
