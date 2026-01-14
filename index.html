@@ -1,0 +1,1774 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>夏輝＆和音｜旅行のしおり</title>
+
+  <!-- Supabase（夫婦共有同期） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Google Maps（キー必要） -->
+  <script>
+    // ★ここにGoogle MapsのAPIキーを入れる（必須）
+    // 例: const GMAPS_API_KEY = "AIzaSy....";
+    const GMAPS_API_KEY = "AIzaSyC0PgEopaVfIHTSH8FLx0hHOPVt-EoeaPk";
+  </script>
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --accent:#4f46e5;
+      --accent2:#06b6d4;
+      --danger:#ef4444;
+      --shadow: 0 10px 24px rgba(15,23,42,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      background:
+        radial-gradient(900px 600px at 15% 10%, rgba(79,70,229,.12), transparent 55%),
+        radial-gradient(700px 500px at 85% 25%, rgba(6,182,212,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      background: rgba(246,247,251,.90);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .wrap{max-width:1000px;margin:0 auto;padding:16px}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .title{display:flex;flex-direction:column;gap:2px}
+    .title h1{font-size:16px;margin:0}
+    .title p{margin:0;font-size:12px;color:var(--muted)}
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:8px 10px; border-radius:999px;
+      background:#fff; border:1px solid var(--border);
+      font-size:12px; color:var(--muted);
+      box-shadow: var(--shadow);
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .tabs{
+      display:flex; gap:8px; padding:12px 0 2px;
+      overflow:auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width:none;
+    }
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{
+      flex:0 0 auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--muted);
+      font-size:13px;
+      cursor:pointer;
+      user-select:none;
+      transition:.15s transform, .15s background, .15s color, .15s border;
+      box-shadow: 0 6px 16px rgba(15,23,42,.06);
+    }
+    .tab:active{transform:scale(.98)}
+    .tab.active{
+      background: linear-gradient(135deg, rgba(79,70,229,.12), rgba(6,182,212,.10));
+      color:var(--text);
+      border-color: rgba(79,70,229,.35);
+    }
+
+    main{padding:18px 0 120px}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:900px){
+      .grid.two{grid-template-columns: 1.2fr .8fr}
+      .grid.twoeq{grid-template-columns: 1fr 1fr}
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      position:relative;
+      z-index:2;
+    }
+    .card h2{margin:0 0 8px;font-size:14px}
+
+    /* トップ下のカードをガラスっぽく（背景が透ける） */
+    #view-top .card.glass{
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .muted{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    input, textarea, select, button{font:inherit}
+    input, textarea, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+    textarea{min-height:90px;resize:vertical}
+    .btn{
+      border:none;
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      user-select:none;
+      background: linear-gradient(135deg, rgba(79,70,229,.92), rgba(6,182,212,.72));
+      color:#fff;
+      font-weight:800;
+      box-shadow: 0 10px 20px rgba(79,70,229,.18);
+      position:relative;
+      z-index:5;
+    }
+    .btn.secondary{
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      font-weight:700;
+    }
+    .btn.danger{
+      background: rgba(239,68,68,.10);
+      color: #b91c1c;
+      border:1px solid rgba(239,68,68,.25);
+      font-weight:800;
+      box-shadow:none;
+    }
+
+    .list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .item{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      display:flex; gap:10px; align-items:flex-start; justify-content:space-between;
+      position:relative;
+      z-index:3;
+    }
+    .item .meta{display:flex; flex-direction:column; gap:4px}
+    .item .meta .t{font-weight:800;font-size:13px}
+    .item .meta .s{font-size:12px;color:var(--muted);white-space:pre-wrap}
+    .tag{
+      font-size:11px; color: var(--muted);
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      background: #f8fafc;
+      width:max-content;
+    }
+
+    .view{display:none}
+    .view.active{display:block}
+
+    /* SG詳細内のタブ中身：activeだけ表示 */
+    #view-sg .section{ display:none; }
+    #view-sg .section.active{ display:block; }
+
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:86px;
+      background:#111827;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:12px;
+      display:none;
+      z-index:80;
+    }
+    .toast.show{display:block}
+
+    .footerbar{
+      position:fixed; bottom:0; left:0; right:0; z-index:70;
+      border-top:1px solid var(--border);
+      background: rgba(246,247,251,.92);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ============ トップ：写真が流れる背景（クリック不能対策） ============ */
+    .hero{
+      position:relative;
+      isolation:isolate;
+      border-radius: 22px;
+      overflow:hidden;
+      min-height: 260px;
+      border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(6,182,212,.10));
+      margin-bottom: 14px;
+    }
+    .hero .bg{
+      position:absolute; inset:0;
+      z-index:0;
+      pointer-events:none;
+    }
+    .hero .overlay{
+      position:absolute; inset:0;
+      z-index:1;
+      pointer-events:none;
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.92));
+    }
+    .hero .content{
+      position:relative;
+      z-index:2;
+      pointer-events:auto;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .marquee, .imgChip, .imgChip img{ pointer-events:none; }
+    .hidden{ display:none !important; }
+
+    .marquee{
+      position:absolute;
+      inset:auto 0 0 0;
+      height: 120%;
+      top:-10%;
+      display:flex;
+      gap:14px;
+      align-items:center;
+      transform: rotate(-6deg);
+      opacity:.50;
+      filter: saturate(1.05);
+    }
+    .marquee.track1{ animation: scroll1 26s linear infinite; z-index:0; }
+    .marquee.track2{ animation: scroll2 34s linear infinite; top:10%; opacity:.35; z-index:0; }
+    @keyframes scroll1{
+      0%{ transform: translateX(0) rotate(-6deg); }
+      100%{ transform: translateX(-50%) rotate(-6deg); }
+    }
+    @keyframes scroll2{
+      0%{ transform: translateX(-10%) rotate(-6deg); }
+      100%{ transform: translateX(-60%) rotate(-6deg); }
+    }
+    .imgChip{
+      width: 200px;
+      height: 140px;
+      border-radius: 18px;
+      overflow:hidden;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.10);
+      box-shadow: 0 10px 22px rgba(15,23,42,.10);
+      flex:0 0 auto;
+    }
+    .imgChip img{
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      display:block;
+    }
+
+    a{color:var(--accent)}
+
+    /* MRT viewer */
+    #mrtViewer { touch-action:none; }
+
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1 id="headerTitle">夏輝＆和音｜旅行のしおり</h1>
+        <p id="headerSub">トップページ</p>
+      </div>
+      <div class="pill" id="syncState">保存：ローカル</div>
+      <button class="btn secondary" id="goHomeBtn">🏠 ホーム</button>
+    </div>
+
+    <!-- シンガポール詳細のときだけ出す -->
+    <div class="tabs" id="tabs" style="display:none">
+      <div class="tab active" data-tab="day">日付毎のプラン</div>
+      <div class="tab" data-tab="mrt">MRT路線図</div>
+      <div class="tab" data-tab="map">地図（旗）</div>
+      <div class="tab" data-tab="shop">買い物予定</div>
+      <div class="tab" data-tab="ticket">チケット</div>
+      <div class="tab" data-tab="share">共有（夫婦同期）</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- =================== TOP VIEW =================== -->
+  <section class="view active" id="view-top">
+    <div class="hero">
+      <div class="bg" id="heroBg"></div>
+      <div class="overlay"></div>
+
+      <div class="content">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:18px;font-weight:950;letter-spacing:.01em">夏輝＆和音の旅行のしおり</div>
+            <div class="muted">写真を登録すると、背景にオシャレに流れる</div>
+          </div>
+          <button class="btn secondary" id="goSingaporeBtn">シンガポール旅行 2026/02/07～02/14</button>
+        </div>
+
+        <!-- 写真登録：折りたたみ -->
+        <div class="card" style="margin-top:6px" id="photoPanel">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <h2 style="margin:0">トップ写真（複数OK）</h2>
+            <button class="btn secondary" id="togglePhotoPanelBtn">閉じる</button>
+          </div>
+
+          <div id="photoPanelBody">
+            <div class="muted">スマホなら写真を選ぶだけ。登録した写真が背景で流れる。</div>
+            <div style="height:10px"></div>
+            <input type="file" id="photoInput" accept="image/*" multiple />
+            <div class="row" style="justify-content:space-between;margin-top:10px">
+              <button class="btn" id="addPhotosBtn">写真を登録</button>
+              <button class="btn danger" id="clearPhotosBtn">写真を全削除</button>
+            </div>
+            <div class="list" id="photoList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="grid twoeq">
+      <div class="card glass">
+        <h2>旅行一覧</h2>
+        <div class="muted">旅行を追加する機能は次で追加できる（今はシンガポール固定）</div>
+        <div class="list">
+          <div class="item">
+            <div class="meta">
+              <div class="t">🇸🇬 シンガポール旅行</div>
+              <div class="s">2026/02/07〜02/14</div>
+            </div>
+            <div class="row" style="gap:8px">
+              <button class="btn" id="goSingaporeBtn2">開く</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <h2>使い方</h2>
+        <div class="muted">
+          ・日付毎に予定を入れる<br/>
+          ・MRT路線図を拡大して見る<br/>
+          ・地図をタップして旗を立てる／住所から旗もOK<br/>
+          ・共有をONにすると夫婦で同期（Supabase）<br/>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== SINGAPORE VIEW =================== -->
+  <section class="view" id="view-sg">
+
+    <!-- 日付毎のプラン -->
+    <section class="section active" id="section-day">
+      <div class="grid two">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <h2 style="margin:0">日付毎のプラン</h2>
+              <div class="muted">2026/02/07〜02/14</div>
+            </div>
+            <button class="btn secondary" id="backTopBtn">← トップへ</button>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="row">
+            <div style="flex:1;min-width:220px">
+              <label class="muted">日付</label>
+              <select id="daySelect"></select>
+            </div>
+            <div style="flex:2;min-width:260px">
+              <label class="muted">その日のメモ</label>
+              <input id="dayMemo" placeholder="例：朝はホテルでゆっくり" />
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <h2>予定を追加</h2>
+
+          <div class="row">
+            <div style="flex:1;min-width:240px">
+              <label class="muted">時間（時 / 分）</label>
+              <div class="row" style="flex-wrap:nowrap;gap:8px">
+                <select id="planHour" style="width:120px"></select>
+                <select id="planMin" style="width:120px"></select>
+                <select id="planAllDay" style="width:120px">
+                  <option value="time">時刻</option>
+                  <option value="all">終日</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="flex:2;min-width:220px">
+              <label class="muted">タイトル</label>
+              <input id="planTitle" placeholder="例：マーライオン公園" />
+            </div>
+
+            <div style="flex:1;min-width:200px">
+              <label class="muted">アイコン</label>
+              <select id="planIcon">
+                <option value="none">なし</option>
+                <option value="meal">🍽 食事</option>
+                <option value="leisure">🎡 レジャー</option>
+                <option value="snack">🍰 おやつ</option>
+                <option value="shopping">🛍 買い物</option>
+                <option value="hotel">🏨 ホテル</option>
+                <option value="move">🚕 移動</option>
+                <option value="spot">📍 観光</option>
+                <option value="note">📝 メモ</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="height:8px"></div>
+          <div class="row">
+            <div style="flex:1;min-width:180px">
+              <label class="muted">移動手段</label>
+              <select id="planMove">
+                <option value="none">未設定</option>
+                <option value="walk">徒歩</option>
+                <option value="mrt">MRT</option>
+                <option value="bus">バス</option>
+                <option value="grab">Grab/タクシー</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div style="flex:2;min-width:240px">
+              <label class="muted">移動メモ（任意）</label>
+              <input id="planMoveMemo" placeholder="例：DTLでBugis→Bayfront" />
+            </div>
+          </div>
+
+          <div style="height:8px"></div>
+          <label class="muted">詳細（場所/URL/注意点など）</label>
+          <textarea id="planDesc" placeholder="例：MRTで〇〇駅→徒歩5分／チケットURL…"></textarea>
+
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn" id="addPlanBtn">追加</button>
+            <button class="btn secondary" id="clearPlanInputs">入力クリア</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>その日の予定</h2>
+          <div class="muted">時間順に並ぶ（終日は上）</div>
+          <div class="list" id="planList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MRT路線図 -->
+    <section class="section" id="section-mrt">
+      <div class="grid twoeq">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <h2 style="margin:0">MRT 路線図</h2>
+              <div class="muted">ピンチ/ホイール/ボタンで拡大縮小（画像：MRT路線図.jpg）</div>
+            </div>
+            <div class="row" style="gap:8px">
+              <button class="btn secondary" id="mrtZoomOut">−</button>
+              <button class="btn secondary" id="mrtZoomReset">100%</button>
+              <button class="btn secondary" id="mrtZoomIn">＋</button>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div id="mrtViewer"
+               style="border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;height:520px;touch-action:none;position:relative">
+            <img id="mrtImg" src="MRT路線図.jpg" alt="MRT路線図"
+                 style="transform-origin:0 0;transform:translate(0px,0px) scale(1);user-select:none;-webkit-user-drag:none;position:absolute;left:0;top:0;max-width:none"/>
+          </div>
+          <div class="muted" style="margin-top:8px">
+            ※表示されない場合：index.html と同じフォルダに「MRT路線図.jpg」を置いてね
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>メモ</h2>
+          <div class="muted">路線図を見ながらメモに使ってOK</div>
+          <div style="height:10px"></div>
+          <textarea id="mrtFreeMemo" placeholder="例：この日はDTLでBugis→Bayfront…"></textarea>
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn" id="saveMrtFreeMemoBtn">保存</button>
+            <button class="btn danger" id="clearMrtFreeMemoBtn">消す</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 地図（旗） -->
+    <section class="section" id="section-map">
+      <div class="grid two">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <h2 style="margin:0">地図（Google Maps）</h2>
+              <div class="muted">地図タップで旗 / 住所入力でも旗</div>
+            </div>
+
+            <div class="row" style="gap:8px">
+              <select id="mapLang" style="width:160px">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+              <button class="btn secondary" id="reloadMapBtn">言語反映</button>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div style="flex:2;min-width:220px">
+              <label class="muted">住所/施設名（例：Marina Bay Sands）</label>
+              <input id="pinAddress" placeholder="例：Gardens by the Bay" />
+            </div>
+            <div style="flex:1;min-width:220px">
+              <label class="muted">旗の名前</label>
+              <input id="pinName2" placeholder="例：MBS（空なら住所が名前になる）" />
+            </div>
+          </div>
+
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn" id="addPinByAddressBtn">住所から旗を追加</button>
+            <button class="btn secondary" id="hintTapBtn">地図をタップして追加</button>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div style="border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff">
+            <div id="gmap" style="width:100%;height:420px;"></div>
+          </div>
+
+          <div class="muted" style="margin-top:8px">
+            ※Google Mapsが表示されない → APIキー未設定の可能性（GMAPS_API_KEY）
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>場所リスト（旗）</h2>
+          <div class="muted">「地図へ」/「削除」</div>
+          <div class="list" id="pinList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 買い物予定 -->
+    <section class="section" id="section-shop">
+      <div class="grid two">
+        <div class="card">
+          <h2>買い物予定を追加</h2>
+          <div class="row">
+            <div style="flex:2;min-width:220px">
+              <label class="muted">アイテム</label>
+              <input id="shopItem" placeholder="例：TWGの紅茶" />
+            </div>
+            <div style="flex:2;min-width:220px">
+              <label class="muted">場所/店</label>
+              <input id="shopPlace" placeholder="例：ION Orchard" />
+            </div>
+          </div>
+          <div style="height:8px"></div>
+          <label class="muted">メモ</label>
+          <input id="shopMemo" placeholder="例：お土産用／価格の目安…" />
+          <div style="height:10px"></div>
+          <button class="btn" id="addShopBtn">追加</button>
+        </div>
+
+        <div class="card">
+          <h2>買い物リスト</h2>
+          <div class="muted">チェックして消し込みできる</div>
+          <div class="list" id="shopList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- チケット -->
+    <section class="section" id="section-ticket">
+      <div class="grid two">
+        <div class="card">
+          <h2>チケット/予約を追加</h2>
+          <label class="muted">タイトル</label>
+          <input id="tTitle" placeholder="例：航空券（往路）" />
+          <div style="height:8px"></div>
+          <label class="muted">内容（予約番号、URL、集合場所など）</label>
+          <textarea id="tBody" placeholder="例：予約番号：XXX / URL：... / 集合：..."></textarea>
+          <div style="height:10px"></div>
+          <button class="btn" id="addTicketBtn">追加</button>
+          <div style="height:12px"></div>
+          <div class="muted">※QR画像は“画像URL”貼り付け運用が最速</div>
+        </div>
+
+        <div class="card">
+          <h2>チケット一覧</h2>
+          <div class="list" id="ticketList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 共有（夫婦同期） -->
+    <section class="section" id="section-share">
+      <div class="grid two">
+        <div class="card">
+          <h2>夫婦共有（同期）</h2>
+          <div class="muted">
+            同じ「共有コード」で同じ旅データを見られる。<br/>
+            ※Supabase未設定ならローカルのまま動く
+          </div>
+
+          <div style="height:10px"></div>
+          <label class="muted">共有コード（例：natsuki-kazune-sg2026）</label>
+          <input id="shareCode" placeholder="例：natsuki-kazune-sg2026" />
+
+          <div style="height:8px"></div>
+          <label class="muted">合言葉（パス）</label>
+          <input id="sharePass" type="password" placeholder="夫婦だけが知ってるやつ" />
+
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn" id="connectShareBtn">共有で使う</button>
+            <button class="btn secondary" id="disconnectShareBtn">ローカルに戻す</button>
+          </div>
+
+          <div style="height:12px"></div>
+          <div class="muted">
+            仕組み：クラウド上に旅データ(JSON)を1つ保存して両端末で同期。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>同期ログ</h2>
+          <div class="list" id="shareLog"></div>
+        </div>
+      </div>
+    </section>
+
+  </section>
+
+  <div class="toast" id="toast">保存しました</div>
+</main>
+
+<!-- フッター：メニュー開閉 -->
+<div class="footerbar">
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="muted">データ：ローカル/共有</div>
+      <button class="btn secondary" id="toggleFooterBtn" style="padding:8px 10px;border-radius:999px">メニュー</button>
+    </div>
+
+    <div id="footerBody" class="hidden" style="margin-top:10px">
+      <div class="row">
+        <button class="btn secondary" id="exportBtn" style="padding:8px 10px">エクスポート</button>
+        <button class="btn secondary" id="importBtn" style="padding:8px 10px">インポート</button>
+        <button class="btn danger" id="resetBtn" style="padding:8px 10px">全削除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =========================
+  // Supabase 設定（使う場合だけ入れる）
+  // =========================
+  const SUPABASE_URL = "";        // 例: "https://xxxx.supabase.co"
+  const SUPABASE_ANON_KEY = "";   // 例: "eyJhbGciOiJIUzI1NiIsInR..."
+  const SHARE_TABLE = "trip_docs";
+
+  // =========================
+  // State
+  // =========================
+  const TOP_KEY = "natsu_kazu_top_v1";
+  const TRIP_LOCAL_KEY = "trip_sg_2026_natsuki_kazune_v5_gmap";
+
+  const defaultTopState = {
+    photos: [],
+    ui: { photoPanelOpen: true }
+  };
+
+  const defaultTripState = {
+    meta: { trip: "Singapore", start:"2026-02-07", end:"2026-02-14" },
+    share: { enabled:false, code:"", passHash:"" },
+    mrt: { freeMemo:"" },
+    pins: [
+      { name:"Changi Airport", lat:1.3644, lng:103.9915 },
+      { name:"Marina Bay Sands", lat:1.2834, lng:103.8607 },
+      { name:"Gardens by the Bay", lat:1.2816, lng:103.8636 }
+    ],
+    shopping: [],
+    tickets: [],
+    days: {}
+  };
+
+  const DATES = (function makeDates(start, end){
+    const out = [];
+    const s = new Date(start), e = new Date(end);
+    for(let d=new Date(s); d<=e; d.setDate(d.getDate()+1)){
+      const y=d.getFullYear();
+      const m=String(d.getMonth()+1).padStart(2,"0");
+      const day=String(d.getDate()).padStart(2,"0");
+      out.push(`${y}-${m}-${day}`);
+    }
+    return out;
+  })(defaultTripState.meta.start, defaultTripState.meta.end);
+
+  let topState = loadJson(TOP_KEY, defaultTopState);
+  let state = loadJson(TRIP_LOCAL_KEY, defaultTripState);
+
+  // =========================
+  // Helpers
+  // =========================
+  function loadJson(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return structuredClone(fallback);
+      const obj = JSON.parse(raw);
+      return { ...structuredClone(fallback), ...obj };
+    }catch(e){
+      console.warn(e);
+      return structuredClone(fallback);
+    }
+  }
+  function saveJson(key, obj){ localStorage.setItem(key, JSON.stringify(obj)); }
+  function flash(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 1200);
+  }
+  function setSyncLabel(text){ document.getElementById("syncState").textContent = text; }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[s]));
+  }
+  function linkify(str){
+    const urlRe = /(https?:\/\/[^\s]+)/g;
+    return str.replace(urlRe, (u)=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+  }
+
+  function iconLabel(v){
+    return ({
+      none:"", meal:"🍽", leisure:"🎡", snack:"🍰", shopping:"🛍",
+      hotel:"🏨", move:"🚕", spot:"📍", note:"📝"
+    }[v] || "");
+  }
+
+  // =========================
+  // View Navigation (Top <-> SG)
+  // =========================
+  const viewTop = document.getElementById("view-top");
+  const viewSg = document.getElementById("view-sg");
+  const tabs = document.getElementById("tabs");
+
+  function showTop(){
+    viewTop.classList.add("active");
+    viewSg.classList.remove("active");
+    tabs.style.display = "none";
+    document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行のしおり";
+    document.getElementById("headerSub").textContent = "トップページ";
+  }
+  function showSg(){
+    viewTop.classList.remove("active");
+    viewSg.classList.add("active");
+    tabs.style.display = "flex";
+    document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行プラン";
+    document.getElementById("headerSub").textContent = "シンガポール旅行（2026/02/07〜02/14）";
+    activateTab("day");
+  }
+
+  document.getElementById("goSingaporeBtn").addEventListener("click", showSg);
+  document.getElementById("goSingaporeBtn2").addEventListener("click", showSg);
+  document.getElementById("backTopBtn").addEventListener("click", showTop);
+  document.getElementById("goHomeBtn").addEventListener("click", showTop);
+
+  // =========================
+  // Tabs inside SG
+  // =========================
+  function activateTab(key){
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelector(`.tab[data-tab="${key}"]`)?.classList.add("active");
+    document.querySelectorAll("#view-sg .section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(`section-${key}`).classList.add("active");
+
+    if(key==="map") renderMap();
+    if(key==="mrt") renderMrtUi();
+  }
+  tabs.addEventListener("click", (e)=>{
+    const t = e.target.closest(".tab");
+    if(!t) return;
+    activateTab(t.dataset.tab);
+  });
+
+  // =========================
+  // Footer menu toggle
+  // =========================
+  document.getElementById("toggleFooterBtn").addEventListener("click", ()=>{
+    document.getElementById("footerBody").classList.toggle("hidden");
+  });
+
+  // =========================
+  // Photo panel toggle
+  // =========================
+  const togglePhotoPanelBtn = document.getElementById("togglePhotoPanelBtn");
+  const photoPanelBody = document.getElementById("photoPanelBody");
+  function setPhotoPanel(open){
+    if(open){
+      photoPanelBody.classList.remove("hidden");
+      togglePhotoPanelBtn.textContent = "閉じる";
+    }else{
+      photoPanelBody.classList.add("hidden");
+      togglePhotoPanelBtn.textContent = "開く";
+    }
+    topState.ui = topState.ui || {};
+    topState.ui.photoPanelOpen = open;
+    saveJson(TOP_KEY, topState);
+  }
+  togglePhotoPanelBtn.addEventListener("click", ()=>{
+    const isOpen = !photoPanelBody.classList.contains("hidden");
+    setPhotoPanel(!isOpen);
+  });
+
+  // =========================
+  // Top Photos (流れる背景)
+  // =========================
+  const photoInput = document.getElementById("photoInput");
+  const photoList = document.getElementById("photoList");
+  const heroBg = document.getElementById("heroBg");
+
+  function renderPhotos(){
+    photoList.innerHTML = "";
+    if(topState.photos.length===0){
+      photoList.innerHTML = `<div class="muted" style="margin-top:10px">まだ写真がありません（登録すると背景が流れる）</div>`;
+    } else {
+      topState.photos.slice().reverse().forEach((src, idxFromEnd)=>{
+        const idx = topState.photos.length - 1 - idxFromEnd;
+        const el = document.createElement("div");
+        el.className="item";
+        el.innerHTML = `
+          <div class="meta">
+            <div class="t">📷 写真 ${idx+1}</div>
+            <div class="s">（タップ削除）</div>
+          </div>
+          <div style="width:90px;height:60px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+            <img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block" />
+          </div>
+        `;
+        el.style.cursor="pointer";
+        el.addEventListener("click", ()=>{
+          if(!confirm("この写真を削除する？")) return;
+          topState.photos.splice(idx,1);
+          saveJson(TOP_KEY, topState);
+          renderPhotos();
+          renderHeroBg();
+          flash("削除した");
+        });
+        photoList.appendChild(el);
+      });
+    }
+  }
+
+  function buildMarqueeTrack(photos, cls){
+    const track = document.createElement("div");
+    track.className = `marquee ${cls}`;
+    const doubled = photos.concat(photos);
+    doubled.forEach(src=>{
+      const chip = document.createElement("div");
+      chip.className="imgChip";
+      chip.innerHTML = `<img src="${src}" alt="">`;
+      track.appendChild(chip);
+    });
+    return track;
+  }
+
+  function renderHeroBg(){
+    heroBg.innerHTML = "";
+    const photos = topState.photos.length ? topState.photos : [
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+        <svg xmlns='http://www.w3.org/2000/svg' width='800' height='560'>
+          <defs>
+            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+              <stop offset='0' stop-color='#4f46e5' stop-opacity='.22'/>
+              <stop offset='1' stop-color='#06b6d4' stop-opacity='.18'/>
+            </linearGradient>
+          </defs>
+          <rect width='100%' height='100%' fill='url(#g)'/>
+          <text x='40' y='120' fill='rgba(15,23,42,.70)' font-size='44' font-family='system-ui'>旅の写真を登録しよう</text>
+        </svg>
+      `)
+    ];
+    heroBg.appendChild(buildMarqueeTrack(photos, "track1"));
+    heroBg.appendChild(buildMarqueeTrack(photos, "track2"));
+  }
+
+  async function fileToDataURL(file){
+    return new Promise((res, rej)=>{
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById("addPhotosBtn").addEventListener("click", async ()=>{
+    const files = Array.from(photoInput.files || []);
+    if(files.length===0) return flash("写真を選んでね");
+
+    const allow = 12 - topState.photos.length;
+    const use = files.slice(0, Math.max(0, allow));
+    if(use.length===0) return flash("写真は最大12枚まで");
+
+    for(const f of use){
+      const dataUrl = await fileToDataURL(f);
+      topState.photos.push(dataUrl);
+    }
+    saveJson(TOP_KEY, topState);
+    photoInput.value = "";
+    renderPhotos();
+    renderHeroBg();
+    flash("登録した");
+  });
+
+  document.getElementById("clearPhotosBtn").addEventListener("click", ()=>{
+    if(!confirm("トップ写真を全部消す？")) return;
+    topState.photos = [];
+    saveJson(TOP_KEY, topState);
+    renderPhotos();
+    renderHeroBg();
+    flash("全削除した");
+  });
+
+  // =========================
+  // Trip persistence (local + share)
+  // =========================
+  let sbClient = null;
+  let shareRealtime = null;
+
+  async function sha256(text){
+    const enc = new TextEncoder().encode(text);
+    const digest = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+
+  function logShare(msg){
+    const box = document.getElementById("shareLog");
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `<div class="meta"><div class="t">🧷 ログ</div><div class="s">${escapeHtml(msg)}</div></div>`;
+    box.prepend(el);
+  }
+
+  async function canUseSupabase(){
+    return !!(window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY);
+  }
+
+  async function initSupabase(){
+    if(!(await canUseSupabase())) return null;
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return sbClient;
+  }
+
+  async function pullFromCloud(){
+    if(!sbClient || !state.share.enabled) return false;
+    const id = state.share.code;
+    const pass_hash = state.share.passHash;
+
+    const { data, error } = await sbClient
+      .from(SHARE_TABLE)
+      .select("data,updated_at")
+      .eq("id", id)
+      .eq("pass_hash", pass_hash)
+      .maybeSingle();
+
+    if(error){
+      logShare("クラウド取得エラー：" + error.message);
+      return false;
+    }
+    if(!data){
+      logShare("クラウドにまだデータ無し（初回作成になります）");
+      return false;
+    }
+
+    state = { ...structuredClone(defaultTripState), ...data.data };
+    saveJson(TRIP_LOCAL_KEY, state);
+    bootTripRender();
+    logShare("クラウドから同期しました");
+    return true;
+  }
+
+  async function pushToCloud(reason="更新"){
+    if(!sbClient || !state.share.enabled) return false;
+    const id = state.share.code;
+    const pass_hash = state.share.passHash;
+
+    const payload = {
+      id,
+      pass_hash,
+      data: state,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await sbClient
+      .from(SHARE_TABLE)
+      .upsert(payload, { onConflict: "id" });
+
+    if(error){
+      logShare("クラウド保存エラー：" + error.message);
+      return false;
+    }
+    logShare("クラウドに保存しました（" + reason + "）");
+    return true;
+  }
+
+  async function enableRealtime(){
+    if(!sbClient || !state.share.enabled) return;
+    if(shareRealtime) {
+      try { await sbClient.removeChannel(shareRealtime); } catch(_){}
+      shareRealtime = null;
+    }
+    shareRealtime = sbClient.channel("trip_sync_" + state.share.code)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + state.share.code },
+        async () => {
+          await pullFromCloud();
+          flash("共有：更新を反映");
+        }
+      ).subscribe((status)=>{
+        logShare("リアルタイム：" + status);
+      });
+  }
+
+  async function ensureSync(reason="更新"){
+    saveJson(TRIP_LOCAL_KEY, state);
+    if(state.share.enabled){
+      setSyncLabel("保存：共有（同期中）");
+      await pushToCloud(reason);
+      setSyncLabel("保存：共有");
+    }else{
+      setSyncLabel("保存：ローカル");
+    }
+  }
+
+  // =========================
+  // Day plans (time dropdown + icon + sort)
+  // =========================
+  const daySelect = document.getElementById("daySelect");
+  const dayMemo = document.getElementById("dayMemo");
+  const planHour = document.getElementById("planHour");
+  const planMin = document.getElementById("planMin");
+  const planAllDay = document.getElementById("planAllDay");
+  const planTitle = document.getElementById("planTitle");
+  const planMove = document.getElementById("planMove");
+  const planMoveMemo = document.getElementById("planMoveMemo");
+  const planDesc = document.getElementById("planDesc");
+  const planList = document.getElementById("planList");
+  const planIcon = document.getElementById("planIcon");
+
+  function fillTimeSelects(){
+    planHour.innerHTML = "";
+    for(let h=0; h<24; h++){
+      const opt = document.createElement("option");
+      opt.value = String(h).padStart(2,"0");
+      opt.textContent = String(h).padStart(2,"0");
+      planHour.appendChild(opt);
+    }
+    planMin.innerHTML = "";
+    ["00","10","20","30","40","50"].forEach(m=>{
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      planMin.appendChild(opt);
+    });
+    planHour.value = "09";
+    planMin.value = "00";
+    planAllDay.value = "time";
+    if(planIcon) planIcon.value = "none";
+  }
+
+  function ensureDay(date){
+    if(!state.days[date]) state.days[date] = { memo:"", plans:[] };
+  }
+
+  function moveLabel(v){
+    return ({ none:"未設定", walk:"徒歩", mrt:"MRT", bus:"バス", grab:"Grab/タクシー", other:"その他" }[v] || "未設定");
+  }
+
+  function renderDaySelect(){
+    daySelect.innerHTML = "";
+    DATES.forEach(d=>{
+      const opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      daySelect.appendChild(opt);
+      ensureDay(d);
+    });
+  }
+
+  function toMinutes(hhmm){
+    const [hh, mm] = hhmm.split(":").map(Number);
+    return hh*60 + mm;
+  }
+
+  function renderPlans(){
+    const d = daySelect.value;
+    ensureDay(d);
+    dayMemo.value = state.days[d].memo || "";
+
+    const plans = (state.days[d].plans || []).slice().sort((a,b)=>{
+      const aKey = a.allDay ? -1 : (a.time ? toMinutes(a.time) : 99999);
+      const bKey = b.allDay ? -1 : (b.time ? toMinutes(b.time) : 99999);
+      return aKey - bKey || (a.createdAt||0)-(b.createdAt||0);
+    });
+
+    planList.innerHTML = "";
+    if(plans.length===0){
+      planList.innerHTML = `<div class="muted" style="margin-top:10px">まだ予定がありません</div>`;
+      return;
+    }
+
+    plans.forEach((p)=>{
+      const el = document.createElement("div");
+      el.className="item";
+
+      const left = document.createElement("div");
+      left.className="meta";
+
+      const icon = iconLabel(p.icon || "none");
+      left.innerHTML = `
+        <div class="t">${escapeHtml(p.allDay ? "終日" : (p.time||"未設定"))}｜${icon ? icon + " " : ""}${escapeHtml(p.title||"")}</div>
+        <div class="tag">移動：${escapeHtml(moveLabel(p.move||"none"))}${p.moveMemo ? "｜" + escapeHtml(p.moveMemo) : ""}</div>
+        <div class="s">${escapeHtml(p.desc||"")}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className="row"; right.style.gap="8px";
+
+      const del = document.createElement("button");
+      del.className="btn danger";
+      del.textContent="削除";
+      del.addEventListener("click", async ()=>{
+        const date = daySelect.value;
+        const arr = state.days[date].plans || [];
+        state.days[date].plans = arr.filter(x=>x.createdAt!==p.createdAt);
+        await ensureSync("予定削除");
+        renderPlans();
+      });
+
+      right.appendChild(del);
+      el.appendChild(left);
+      el.appendChild(right);
+      planList.appendChild(el);
+    });
+  }
+
+  document.getElementById("addPlanBtn").addEventListener("click", async ()=>{
+    const date = daySelect.value;
+    ensureDay(date);
+
+    const isAllDay = (planAllDay.value === "all");
+    const timeStr = isAllDay ? "" : `${planHour.value}:${planMin.value}`;
+
+    state.days[date].plans.push({
+      allDay: isAllDay,
+      time: timeStr,
+      title: planTitle.value.trim(),
+      icon: (planIcon?.value || "none"),
+      move: planMove.value,
+      moveMemo: planMoveMemo.value.trim(),
+      desc: planDesc.value.trim(),
+      createdAt: Date.now()
+    });
+
+    await ensureSync("予定追加");
+    renderPlans();
+  });
+
+  document.getElementById("clearPlanInputs").addEventListener("click", ()=>{
+    planAllDay.value="time";
+    planHour.value="09";
+    planMin.value="00";
+    planTitle.value="";
+    if(planIcon) planIcon.value="none";
+    planMove.value="none";
+    planMoveMemo.value="";
+    planDesc.value="";
+    flash("入力をクリア");
+  });
+
+  daySelect.addEventListener("change", renderPlans);
+  dayMemo.addEventListener("input", ()=>{
+    const date = daySelect.value;
+    ensureDay(date);
+    state.days[date].memo = dayMemo.value;
+    saveJson(TRIP_LOCAL_KEY, state);
+    setSyncLabel(state.share.enabled ? "保存：共有（編集中）" : "保存：ローカル（編集中）");
+    clearTimeout(window.__memoTimer);
+    window.__memoTimer = setTimeout(async ()=>{ await ensureSync("日付メモ更新"); }, 700);
+  });
+
+  // =========================
+  // MRT image viewer (pan/zoom)
+  // =========================
+  const mrtViewer = document.getElementById("mrtViewer");
+  const mrtImg = document.getElementById("mrtImg");
+  const mrtZoomIn = document.getElementById("mrtZoomIn");
+  const mrtZoomOut = document.getElementById("mrtZoomOut");
+  const mrtZoomReset = document.getElementById("mrtZoomReset");
+
+  let mrtZ = 1, mrtX = 0, mrtY = 0;
+  let mrtDragging = false, mrtLast = null;
+
+  function applyMrtTransform(){
+    if(!mrtImg) return;
+    mrtImg.style.transform = `translate(${mrtX}px,${mrtY}px) scale(${mrtZ})`;
+  }
+
+  function mrtReset(){
+    mrtZ = 1; mrtX = 0; mrtY = 0;
+    applyMrtTransform();
+  }
+
+  function mrtZoom(delta, center=null){
+    const newZ = Math.min(6, Math.max(0.3, mrtZ * delta));
+    if(newZ === mrtZ) return;
+
+    if(center && mrtViewer){
+      const rect = mrtViewer.getBoundingClientRect();
+      const cx = center.x - rect.left;
+      const cy = center.y - rect.top;
+
+      const sx = (cx - mrtX) / mrtZ;
+      const sy = (cy - mrtY) / mrtZ;
+      mrtX = cx - sx * newZ;
+      mrtY = cy - sy * newZ;
+    }
+
+    mrtZ = newZ;
+    applyMrtTransform();
+  }
+
+  if(mrtZoomIn) mrtZoomIn.addEventListener("click", ()=>mrtZoom(1.2));
+  if(mrtZoomOut) mrtZoomOut.addEventListener("click", ()=>mrtZoom(1/1.2));
+  if(mrtZoomReset) mrtZoomReset.addEventListener("click", mrtReset);
+
+  if(mrtViewer){
+    mrtViewer.addEventListener("wheel", (e)=>{
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1.15 : 1/1.15;
+      mrtZoom(delta, {x:e.clientX, y:e.clientY});
+    }, {passive:false});
+
+    mrtViewer.addEventListener("pointerdown", (e)=>{
+      mrtDragging = true;
+      mrtLast = {x:e.clientX, y:e.clientY};
+      mrtViewer.setPointerCapture(e.pointerId);
+    });
+    mrtViewer.addEventListener("pointermove", (e)=>{
+      if(!mrtDragging) return;
+      const dx = e.clientX - mrtLast.x;
+      const dy = e.clientY - mrtLast.y;
+      mrtLast = {x:e.clientX, y:e.clientY};
+      mrtX += dx; mrtY += dy;
+      applyMrtTransform();
+    });
+    mrtViewer.addEventListener("pointerup", ()=>{
+      mrtDragging = false; mrtLast = null;
+    });
+    mrtViewer.addEventListener("pointercancel", ()=>{
+      mrtDragging = false; mrtLast = null;
+    });
+  }
+
+  async function renderMrtUi(){
+    const mrtFreeMemo = document.getElementById("mrtFreeMemo");
+    if(mrtFreeMemo){
+      mrtFreeMemo.value = (state.mrt && state.mrt.freeMemo) ? state.mrt.freeMemo : "";
+    }
+  }
+
+  // MRT free memo
+  document.getElementById("saveMrtFreeMemoBtn")?.addEventListener("click", async ()=>{
+    const mrtFreeMemo = document.getElementById("mrtFreeMemo");
+    state.mrt = state.mrt || {};
+    state.mrt.freeMemo = (mrtFreeMemo?.value || "");
+    await ensureSync("MRTメモ保存");
+    flash("保存した");
+  });
+  document.getElementById("clearMrtFreeMemoBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("MRTメモを消す？")) return;
+    const mrtFreeMemo = document.getElementById("mrtFreeMemo");
+    state.mrt = state.mrt || {};
+    state.mrt.freeMemo = "";
+    if(mrtFreeMemo) mrtFreeMemo.value="";
+    await ensureSync("MRTメモ削除");
+    flash("消した");
+  });
+
+  // =========================
+  // Google Maps: load once + fast init + language switch
+  // =========================
+  let gmap = null;
+  let gmarkers = [];
+  let geocoder = null;
+
+  function mapCenter(){
+    // Singapore中心
+    return { lat: 1.2897, lng: 103.8501 };
+  }
+
+  function clearMarkers(){
+    gmarkers.forEach(m=>m.setMap(null));
+    gmarkers = [];
+  }
+
+  function renderPinsOnGmap(){
+    if(!gmap) return;
+    clearMarkers();
+
+    (state.pins || []).forEach(p=>{
+      if(typeof p.lat !== "number" || typeof p.lng !== "number") return;
+      const m = new google.maps.Marker({
+        position: {lat:p.lat, lng:p.lng},
+        map: gmap,
+        title: p.name || ""
+      });
+      const info = new google.maps.InfoWindow({
+        content: `<div style="font-weight:800">🚩 ${escapeHtml(p.name || "")}</div>`
+      });
+      m.addListener("click", ()=>info.open({anchor:m, map:gmap}));
+      gmarkers.push(m);
+    });
+  }
+
+  function renderPinList(){
+    const pinList = document.getElementById("pinList");
+    pinList.innerHTML = "";
+
+    if(!state.pins || state.pins.length===0){
+      pinList.innerHTML = `<div class="muted" style="margin-top:10px">地図をタップして旗を追加</div>`;
+      return;
+    }
+
+    state.pins.forEach((p, idx)=>{
+      const el = document.createElement("div");
+      el.className="item";
+
+      const left = document.createElement("div");
+      left.className="meta";
+      left.innerHTML = `
+        <div class="t">🚩 ${escapeHtml(p.name)}</div>
+        <div class="s">${(p.lat && p.lng) ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : ""}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className="row"; right.style.gap="8px";
+
+      const go = document.createElement("button");
+      go.className="btn secondary";
+      go.textContent="地図へ";
+      go.addEventListener("click", ()=>{
+        if(!gmap) return;
+        gmap.panTo({lat:p.lat, lng:p.lng});
+        gmap.setZoom(15);
+      });
+
+      const del = document.createElement("button");
+      del.className="btn danger";
+      del.textContent="削除";
+      del.addEventListener("click", async ()=>{
+        state.pins.splice(idx,1);
+        await ensureSync("旗削除");
+        renderPinsOnGmap();
+        renderPinList();
+      });
+
+      right.appendChild(go);
+      right.appendChild(del);
+
+      el.appendChild(left);
+      el.appendChild(right);
+      pinList.appendChild(el);
+    });
+  }
+
+  async function addPin(lat, lng, name){
+    const nm = (name || "").trim() || "ピン";
+    state.pins.unshift({ name: nm, lat, lng, createdAt: Date.now() });
+    await ensureSync("旗追加");
+    renderPinsOnGmap();
+    renderPinList();
+  }
+
+  function ensureGoogleMapsLoaded(lang){
+    return new Promise((resolve, reject)=>{
+      if(window.google && window.google.maps){
+        return resolve(true);
+      }
+      if(!GMAPS_API_KEY){
+        return reject(new Error("GMAPS_API_KEYが空"));
+      }
+      const cbName = "__initGMap_" + Math.random().toString(16).slice(2);
+      window[cbName] = ()=>{ resolve(true); delete window[cbName]; };
+
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_API_KEY)}&libraries=places&language=${encodeURIComponent(lang)}&callback=${cbName}`;
+      s.async = true;
+      s.defer = true;
+      s.onerror = ()=>reject(new Error("Google Maps読み込み失敗"));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function initGmapOnce(){
+    if(gmap) return true;
+
+    const lang = document.getElementById("mapLang")?.value || "ja";
+    await ensureGoogleMapsLoaded(lang);
+
+    geocoder = new google.maps.Geocoder();
+
+    gmap = new google.maps.Map(document.getElementById("gmap"), {
+      center: mapCenter(),
+      zoom: 12,
+      gestureHandling: "greedy",
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false
+    });
+
+    // 地図タップで旗
+    gmap.addListener("click", async (e)=>{
+      const name = prompt("旗の名前を入力してね（空なら住所っぽいのにする）") || "";
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+
+      let finalName = name.trim();
+      if(!finalName && geocoder){
+        try{
+          const res = await geocoder.geocode({ location:{lat, lng} });
+          const r0 = res.results && res.results[0];
+          finalName = (r0 && r0.formatted_address) ? r0.formatted_address : "ピン";
+        }catch(_){
+          finalName = "ピン";
+        }
+      }
+      await addPin(lat, lng, finalName);
+    });
+
+    renderPinsOnGmap();
+    renderPinList();
+    return true;
+  }
+
+  async function renderMap(){
+    try{
+      await initGmapOnce();
+    }catch(e){
+      flash("地図：APIキー未設定/読込失敗");
+      console.warn(e);
+      // リストだけは出す
+      renderPinList();
+    }
+  }
+
+  document.getElementById("hintTapBtn")?.addEventListener("click", ()=>{
+    alert("地図の好きな場所をタップ → 旗の名前を入力 → 追加されます");
+  });
+
+  // 住所から旗
+  document.getElementById("addPinByAddressBtn")?.addEventListener("click", async ()=>{
+    const addr = (document.getElementById("pinAddress")?.value || "").trim();
+    const nmIn = (document.getElementById("pinName2")?.value || "").trim();
+    if(!addr) return flash("住所/施設名を入れてね");
+
+    await renderMap(); // map/geo準備
+
+    if(!(window.google && google.maps && geocoder)){
+      return flash("地図がまだ使えない（APIキー）");
+    }
+
+    try{
+      const res = await geocoder.geocode({ address: addr });
+      const r0 = res.results && res.results[0];
+      if(!r0) return flash("見つからないかも…（別の言い方で）");
+      const loc = r0.geometry.location;
+      const lat = loc.lat();
+      const lng = loc.lng();
+      const finalName = nmIn || r0.formatted_address || addr;
+      await addPin(lat, lng, finalName);
+      if(gmap){
+        gmap.panTo({lat, lng});
+        gmap.setZoom(15);
+      }
+      document.getElementById("pinAddress").value = "";
+      document.getElementById("pinName2").value = "";
+      flash("旗を追加した");
+    }catch(e){
+      console.warn(e);
+      flash("住所検索に失敗…");
+    }
+  });
+
+  // 言語反映（= 再読み込み）
+  document.getElementById("reloadMapBtn")?.addEventListener("click", ()=>{
+    // Google Mapsは language を後から切替できないのでリロード方式
+    if(confirm("地図の言語を反映するためページを再読み込みします。OK？")){
+      location.reload();
+    }
+  });
+
+  // =========================
+  // Shopping
+  // =========================
+  const shopItem = document.getElementById("shopItem");
+  const shopPlace = document.getElementById("shopPlace");
+  const shopMemo = document.getElementById("shopMemo");
+  const shopList = document.getElementById("shopList");
+
+  function renderShop(){
+    shopList.innerHTML = "";
+    if(state.shopping.length===0){
+      shopList.innerHTML = `<div class="muted" style="margin-top:10px">まだありません</div>`;
+      return;
+    }
+    state.shopping.forEach((s, idx)=>{
+      const el = document.createElement("div");
+      el.className="item";
+
+      const left = document.createElement("div");
+      left.className="meta";
+      left.innerHTML = `
+        <div class="t">${s.done ? "✅" : "🛍️"} ${escapeHtml(s.item)}</div>
+        <div class="s">${escapeHtml(s.place || "")}${s.memo ? "｜" + escapeHtml(s.memo) : ""}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className="row"; right.style.gap="8px";
+
+      const toggle = document.createElement("button");
+      toggle.className="btn secondary";
+      toggle.textContent = s.done ? "戻す" : "完了";
+      toggle.addEventListener("click", async ()=>{
+        s.done = !s.done;
+        await ensureSync("買い物更新");
+        renderShop();
+      });
+
+      const del = document.createElement("button");
+      del.className="btn danger";
+      del.textContent="削除";
+      del.addEventListener("click", async ()=>{
+        state.shopping.splice(idx,1);
+        await ensureSync("買い物削除");
+        renderShop();
+      });
+
+      right.appendChild(toggle);
+      right.appendChild(del);
+
+      el.appendChild(left);
+      el.appendChild(right);
+      shopList.appendChild(el);
+    });
+  }
+
+  document.getElementById("addShopBtn").addEventListener("click", async ()=>{
+    const item = shopItem.value.trim();
+    if(!item) return flash("アイテム名を入れてね");
+    state.shopping.unshift({
+      item,
+      place: shopPlace.value.trim(),
+      memo: shopMemo.value.trim(),
+      done:false
+    });
+    shopItem.value=""; shopPlace.value=""; shopMemo.value="";
+    await ensureSync("買い物追加");
+    renderShop();
+  });
+
+  // =========================
+  // Tickets
+  // =========================
+  const ticketList = document.getElementById("ticketList");
+  function renderTickets(){
+    ticketList.innerHTML = "";
+    if(state.tickets.length===0){
+      ticketList.innerHTML = `<div class="muted" style="margin-top:10px">まだありません</div>`;
+      return;
+    }
+    state.tickets.forEach((t, idx)=>{
+      const el = document.createElement("div");
+      el.className="item";
+
+      const left = document.createElement("div");
+      left.className="meta";
+      left.innerHTML = `
+        <div class="t">🎫 ${escapeHtml(t.title)}</div>
+        <div class="s">${linkify(escapeHtml(t.body||""))}</div>
+        <div class="tag">更新：${new Date(t.updatedAt).toLocaleString("ja-JP")}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className="row"; right.style.gap="8px";
+
+      const del = document.createElement("button");
+      del.className="btn danger";
+      del.textContent="削除";
+      del.addEventListener("click", async ()=>{
+        state.tickets.splice(idx,1);
+        await ensureSync("チケット削除");
+        renderTickets();
+      });
+
+      right.appendChild(del);
+
+      el.appendChild(left);
+      el.appendChild(right);
+      ticketList.appendChild(el);
+    });
+  }
+
+  document.getElementById("addTicketBtn").addEventListener("click", async ()=>{
+    const title = document.getElementById("tTitle").value.trim();
+    const body = document.getElementById("tBody").value.trim();
+    if(!title) return flash("タイトル入れてね");
+    state.tickets.unshift({ title, body, updatedAt: Date.now() });
+    document.getElementById("tTitle").value="";
+    document.getElementById("tBody").value="";
+    await ensureSync("チケット追加");
+    renderTickets();
+  });
+
+  // =========================
+  // Share UI
+  // =========================
+  document.getElementById("connectShareBtn").addEventListener("click", async ()=>{
+    const code = document.getElementById("shareCode").value.trim();
+    const pass = document.getElementById("sharePass").value;
+    if(!code || !pass) return flash("共有コードと合言葉を入れてね");
+
+    if(!(await canUseSupabase())){
+      logShare("Supabase未設定：コード内のURL/KEYを設定してね");
+      return flash("Supabase未設定");
+    }
+
+    await initSupabase();
+
+    state.share.enabled = true;
+    state.share.code = code;
+    state.share.passHash = await sha256(pass);
+
+    setSyncLabel("保存：共有（接続中）");
+    logShare("共有を有効化：" + code);
+
+    await pullFromCloud();
+    await pushToCloud("共有開始");
+    await enableRealtime();
+    await ensureSync("共有開始");
+    flash("共有で使う");
+  });
+
+  document.getElementById("disconnectShareBtn").addEventListener("click", async ()=>{
+    state.share.enabled = false;
+    state.share.code = "";
+    state.share.passHash = "";
+    setSyncLabel("保存：ローカル");
+    logShare("共有を無効化（ローカルへ）");
+    saveJson(TRIP_LOCAL_KEY, state);
+
+    if(sbClient && shareRealtime){
+      try{ await sbClient.removeChannel(shareRealtime); }catch(_){}
+      shareRealtime = null;
+    }
+    flash("ローカルに戻した");
+  });
+
+  // =========================
+  // Export / Import / Reset
+  // =========================
+  document.getElementById("exportBtn").addEventListener("click", ()=>{
+    const json = JSON.stringify({ topState, tripState: state }, null, 2);
+    navigator.clipboard.writeText(json).then(()=>{
+      flash("JSONをコピーした");
+    }).catch(()=>{
+      prompt("このJSONをコピーして保存してね", json);
+    });
+  });
+
+  document.getElementById("importBtn").addEventListener("click", async ()=>{
+    const raw = prompt("貼り付けるJSONを入れてOK");
+    if(!raw) return;
+    try{
+      const obj = JSON.parse(raw);
+      if(obj.topState) topState = { ...structuredClone(defaultTopState), ...obj.topState };
+      if(obj.tripState) state = { ...structuredClone(defaultTripState), ...obj.tripState };
+      saveJson(TOP_KEY, topState);
+      saveJson(TRIP_LOCAL_KEY, state);
+      bootTopRender();
+      bootTripRender();
+      flash("インポート完了");
+    }catch(e){
+      flash("JSONが壊れてるっぽい");
+    }
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", async ()=>{
+    if(!confirm("全部消す？（戻せない）")) return;
+    topState = structuredClone(defaultTopState);
+    state = structuredClone(defaultTripState);
+    saveJson(TOP_KEY, topState);
+    saveJson(TRIP_LOCAL_KEY, state);
+    bootTopRender();
+    bootTripRender();
+    flash("全削除した");
+  });
+
+  // =========================
+  // Boot
+  // =========================
+  function bootTopRender(){
+    renderPhotos();
+    renderHeroBg();
+    topState.ui = topState.ui || {};
+    setPhotoPanel(topState.ui.photoPanelOpen !== false);
+  }
+
+  function bootTripRender(){
+    fillTimeSelects();
+    renderDaySelect();
+    daySelect.value = DATES[0];
+    renderPlans();
+    renderShop();
+    renderTickets();
+    document.getElementById("shareCode").value = state.share.code || "";
+    setSyncLabel(state.share.enabled ? "保存：共有" : "保存：ローカル");
+  }
+
+  // start at TOP
+  showTop();
+  bootTopRender();
+  bootTripRender();
+
+</script>
+</body>
+</html>
+
