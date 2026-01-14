@@ -825,39 +825,39 @@ closeFooterMenu();
     activateTab(t.dataset.tab);
   });
 
-  // =========================
-  // Footer menu toggle
-  // =========================
+// =========================
+// Footer menu toggle（メニュー自動で閉じる）
+// =========================
+const toggleFooterBtn = document.getElementById("toggleFooterBtn");
+const footerBody = document.getElementById("footerBody");
 
 function closeFooterMenu(){
   if(!footerBody) return;
   footerBody.classList.add("hidden");
 }
-
 function openFooterMenu(){
   if(!footerBody) return;
   footerBody.classList.remove("hidden");
 }
 
-// 既存のトグルはこれに置き換え
-toggleFooterBtn.addEventListener("click", (e)=>{
+// トグル
+toggleFooterBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
   footerBody.classList.toggle("hidden");
 });
 
-// メニュー外をタップしたら閉じる（これが効く）
+// メニュー外クリックで閉じる
 document.addEventListener("click", (e)=>{
   const footer = document.querySelector(".footerbar");
   if(!footer) return;
-  if(footer.contains(e.target)) return; // フッター内クリックは無視
+  if(footer.contains(e.target)) return;
   closeFooterMenu();
 });
 
-// スクロールしたら閉じる（旅行中これが便利）
+// スクロールで閉じる
 window.addEventListener("scroll", ()=>{
   closeFooterMenu();
 }, { passive:true });
-
 
 
   // =========================
