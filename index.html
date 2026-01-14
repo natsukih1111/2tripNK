@@ -298,7 +298,7 @@
     <!-- シンガポール詳細のときだけ出す -->
     <div class="tabs" id="tabs" style="display:none">
       <div class="tab active" data-tab="day">日付毎のプラン</div>
-      <div class="tab" data-tab="mrt">MRT路線図</div>
+      <div class="tab" data-tab="mrt">mrt_map</div>
       <div class="tab" data-tab="map">地図（旗）</div>
       <div class="tab" data-tab="shop">買い物予定</div>
       <div class="tab" data-tab="ticket">チケット</div>
@@ -367,7 +367,7 @@
         <h2>使い方</h2>
         <div class="muted">
           ・日付毎に予定を入れる<br/>
-          ・MRT路線図を拡大して見る<br/>
+          ・mrt_mapを拡大して見る<br/>
           ・地図をタップして旗を立てる／住所から旗もOK<br/>
           ・共有をONにすると夫婦で同期（Supabase）<br/>
         </div>
@@ -477,14 +477,14 @@
       </div>
     </section>
 
-    <!-- MRT路線図 -->
+    <!-- mrt_map -->
     <section class="section" id="section-mrt">
       <div class="grid twoeq">
         <div class="card">
           <div class="row" style="justify-content:space-between;align-items:center">
             <div>
               <h2 style="margin:0">MRT 路線図</h2>
-              <div class="muted">ピンチ/ホイール/ボタンで拡大縮小（画像：MRT路線図.jpg）</div>
+              <div class="muted">ピンチ/ホイール/ボタンで拡大縮小（画像：mrt_map.jpg）</div>
             </div>
             <div class="row" style="gap:8px">
               <button class="btn secondary" id="mrtZoomOut">−</button>
@@ -497,11 +497,11 @@
 
           <div id="mrtViewer"
                style="border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;height:520px;touch-action:none;position:relative">
-            <img id="mrtImg" src="MRT路線図.jpg" alt="MRT路線図"
+            <img id="mrtImg" src="mrt_map.jpg" alt="mrt_map"
                  style="transform-origin:0 0;transform:translate(0px,0px) scale(1);user-select:none;-webkit-user-drag:none;position:absolute;left:0;top:0;max-width:none"/>
           </div>
           <div class="muted" style="margin-top:8px">
-            ※表示されない場合：index.html と同じフォルダに「MRT路線図.jpg」を置いてね
+            ※表示されない場合：index.html と同じフォルダに「mrt_map.jpg」を置いてね
           </div>
         </div>
 
