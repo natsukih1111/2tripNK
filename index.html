@@ -1023,11 +1023,23 @@
   }
 
   async function initSupabase(){
-    if(!(await canUseSupabase())) return null;
-    if(sbClient) return sbClient;
-    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    return sbClient;
-  }
+  if(!(await canUseSupabase())) return null;
+  if(sbClient) return sbClient;
+
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    },
+    realtime: {
+      params: { eventsPerSecond: 10 }
+    }
+  });
+
+  return sbClient;
+}
+
 
   async function pullFromCloud(){
     if(!sbClient || !state.share.enabled) return false;
@@ -1082,24 +1094,33 @@
   }
 
   async function enableRealtime(){
-    if(!sbClient || !state.share.enabled) return;
+  if(!sbClient || !state.share.enabled) return;
 
-    if(shareRealtime) {
-      try { await sbClient.removeChannel(shareRealtime); } catch(_){}
-      shareRealtime = null;
-    }
-
-    shareRealtime = sbClient.channel("trip_sync_" + state.share.code)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + state.share.code },
-        async () => {
-          await pullFromCloud();
-          flash("共有：更新を反映");
-        }
-      ).subscribe((status)=>{
-        logShare("リアルタイム：" + status);
-      });
+  if(shareRealtime) {
+    try { await sbClient.removeChannel(shareRealtime); } catch(_){}
+    shareRealtime = null;
   }
+
+  const channelName = "trip_sync_" + state.share.code;
+
+  shareRealtime = sbClient
+    .channel(channelName)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + state.share.code },
+      async (payload) => {
+        console.log("✅ REALTIME EVENT:", payload);
+        logShare("✅ Realtimeイベント受信");
+        await pullFromCloud();
+        flash("共有：更新を反映");
+      }
+    )
+    .subscribe((status) => {
+      console.log("📡 REALTIME STATUS:", status, "channel=", channelName);
+      logShare("📡 リアルタイム：" + status);
+    });
+}
+
 
   async function ensureSync(reason="更新"){
     saveJson(TRIP_LOCAL_KEY, state);
