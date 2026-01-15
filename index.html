@@ -11,9 +11,18 @@
   <!-- Google Maps（キー必要） -->
   <script>
     // ★ここにGoogle MapsのAPIキーを入れる（必須）
-    // 例: const GMAPS_API_KEY = "AIzaSy....";
     const GMAPS_API_KEY = "AIzaSyC0PgEopaVfIHTSH8FLx0hHOPVt-EoeaPk";
   </script>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+
+  <!-- iPhone用（Safariでホーム追加した時の見え方） -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="旅行しおり">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 
   <style>
     :root{
@@ -86,7 +95,7 @@
       border-color: rgba(79,70,229,.35);
     }
 
-    main{padding:18px 0 120px}
+    main{padding:18px 0 24px}
 
     .grid{display:grid;grid-template-columns:1fr;gap:14px}
     @media(min-width:900px){
@@ -182,7 +191,7 @@
 
     .toast{
       position:fixed; left:50%; transform:translateX(-50%);
-      bottom:86px;
+      bottom:20px;
       background:#111827;
       border:1px solid rgba(255,255,255,.12);
       color:#fff;
@@ -193,13 +202,6 @@
       z-index:80;
     }
     .toast.show{display:block}
-
-    .footerbar{
-      position:fixed; bottom:0; left:0; right:0; z-index:70;
-      border-top:1px solid var(--border);
-      background: rgba(246,247,251,.92);
-      backdrop-filter: blur(10px);
-    }
 
     /* ============ トップ：写真が流れる背景（クリック不能対策） ============ */
     .hero{
@@ -280,16 +282,9 @@
     /* MRT viewer */
     #mrtViewer { touch-action:none; }
 
+    /* Album modal */
+    #slideModal.hidden{ display:none !important; }
   </style>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4f46e5">
-
-<!-- iPhone用（Safariでホーム追加した時の見え方） -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="旅行しおり">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-
 </head>
 
 <body>
@@ -311,6 +306,7 @@
       <div class="tab" data-tab="map">地図（旗）</div>
       <div class="tab" data-tab="shop">買い物予定</div>
       <div class="tab" data-tab="ticket">チケット</div>
+      <div class="tab" data-tab="album">アルバム</div>
       <div class="tab" data-tab="share">共有（夫婦同期）</div>
     </div>
   </div>
@@ -378,6 +374,7 @@
           ・日付毎に予定を入れる<br/>
           ・mrt_mapを拡大して見る<br/>
           ・地図をタップして旗を立てる／住所から旗もOK<br/>
+          ・アルバムに写真を入れてスライドショー<br/>
           ・共有をONにすると夫婦で同期（Supabase）<br/>
         </div>
       </div>
@@ -497,7 +494,7 @@
             </div>
             <div class="row" style="gap:8px">
               <button class="btn secondary" id="mrtZoomOut">−</button>
-              <button class="btn secondary" id="mrtZoomReset">100%</button>
+              <button class="btn secondary" id="mrtZoomReset">全体</button>
               <button class="btn secondary" id="mrtZoomIn">＋</button>
             </div>
           </div>
@@ -534,7 +531,7 @@
           <div class="row" style="justify-content:space-between;align-items:center">
             <div>
               <h2 style="margin:0">地図（Google Maps）</h2>
-              <div class="muted">地図タップで旗 / 住所入力でも旗</div>
+              <div class="muted">地図タップで旗 / 住所入力でも旗（カテゴリで色分け）</div>
             </div>
 
             <div class="row" style="gap:8px">
@@ -557,6 +554,17 @@
               <label class="muted">旗の名前</label>
               <input id="pinName2" placeholder="例：MBS（空なら住所が名前になる）" />
             </div>
+            <div style="flex:1;min-width:180px">
+              <label class="muted">カテゴリ</label>
+              <select id="pinCat">
+                <option value="spot">📍 観光</option>
+                <option value="meal">🍽 食事</option>
+                <option value="shopping">🛍 買い物</option>
+                <option value="hotel">🏨 ホテル</option>
+                <option value="move">🚕 移動</option>
+                <option value="note">📝 メモ</option>
+              </select>
+            </div>
           </div>
 
           <div class="row" style="justify-content:space-between;margin-top:10px">
@@ -571,7 +579,7 @@
           </div>
 
           <div class="muted" style="margin-top:8px">
-            ※Google Mapsが表示されない → APIキー未設定の可能性（GMAPS_API_KEY）
+            ※Google Mapsが表示されない → APIキー未設定/制限の可能性（GMAPS_API_KEY）
           </div>
         </div>
 
@@ -636,6 +644,54 @@
       </div>
     </section>
 
+    <!-- アルバム -->
+    <section class="section" id="section-album">
+      <div class="grid twoeq">
+        <div class="card">
+          <h2>アルバムに写真を追加</h2>
+          <div class="muted">追加した写真をスライドショーで見れる</div>
+          <div style="height:10px"></div>
+          <input type="file" id="albumInput" accept="image/*" multiple />
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn" id="addAlbumBtn">アルバムに追加</button>
+            <button class="btn danger" id="clearAlbumBtn">全削除</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn secondary" id="playSlideBtn">▶ スライドショー</button>
+          </div>
+          <div class="muted" style="margin-top:10px">
+            ※写真は端末内に保存（共有ONでも写真は重くなるので基本ローカル推奨）
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>アルバム</h2>
+          <div class="list" id="albumList"></div>
+        </div>
+      </div>
+
+      <!-- スライドショー用 -->
+      <div id="slideModal" class="hidden" style="
+        position:fixed;inset:0;z-index:100;
+        background:rgba(15,23,42,.75);
+        display:flex;align-items:center;justify-content:center;
+        padding:18px;">
+        <div style="max-width:900px;width:100%">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px">
+            <div class="pill" id="slideInfo">1 / 1</div>
+            <button class="btn secondary" id="closeSlideBtn">閉じる</button>
+          </div>
+          <div style="background:#000;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.15)">
+            <img id="slideImg" style="width:100%;height:70vh;object-fit:contain;display:block" />
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:10px">
+            <button class="btn secondary" id="prevSlideBtn">←</button>
+            <button class="btn secondary" id="nextSlideBtn">→</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 共有（夫婦同期） -->
     <section class="section" id="section-share">
       <div class="grid two">
@@ -677,37 +733,19 @@
   <div class="toast" id="toast">保存しました</div>
 </main>
 
-<!-- フッター：メニュー開閉 -->
-<div class="footerbar">
-  <div class="wrap">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div class="muted">データ：ローカル/共有</div>
-      <button class="btn secondary" id="toggleFooterBtn" style="padding:8px 10px;border-radius:999px">メニュー</button>
-    </div>
-
-    <div id="footerBody" class="hidden" style="margin-top:10px">
-      <div class="row">
-        <button class="btn secondary" id="exportBtn" style="padding:8px 10px">エクスポート</button>
-        <button class="btn secondary" id="importBtn" style="padding:8px 10px">インポート</button>
-        <button class="btn danger" id="resetBtn" style="padding:8px 10px">全削除</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
   // =========================
   // Supabase 設定（使う場合だけ入れる）
   // =========================
-  const SUPABASE_URL = "https://wrdxpnsevzlbbnwqjdwf.supabase.co";        // 例: "https://xxxx.supabase.co"
-  const SUPABASE_ANON_KEY = "sb_publishable_j0ELdUy642C8My25peJXpg_MOzrTXS0";   // 例: "eyJhbGciOiJIUzI1NiIsInR..."
+  const SUPABASE_URL = "https://wrdxpnsevzlbbnwqjdwf.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_j0ELdUy642C8My25peJXpg_MOzrTXS0";
   const SHARE_TABLE = "trip_docs";
 
   // =========================
   // State
   // =========================
   const TOP_KEY = "natsu_kazu_top_v1";
-  const TRIP_LOCAL_KEY = "trip_sg_2026_natsuki_kazune_v5_gmap";
+  const TRIP_LOCAL_KEY = "trip_sg_2026_natsuki_kazune_v6_pwa_album";
 
   const defaultTopState = {
     photos: [],
@@ -719,12 +757,13 @@
     share: { enabled:false, code:"", passHash:"" },
     mrt: { freeMemo:"" },
     pins: [
-      { name:"Changi Airport", lat:1.3644, lng:103.9915 },
-      { name:"Marina Bay Sands", lat:1.2834, lng:103.8607 },
-      { name:"Gardens by the Bay", lat:1.2816, lng:103.8636 }
+      { name:"Changi Airport", lat:1.3644, lng:103.9915, cat:"move" },
+      { name:"Marina Bay Sands", lat:1.2834, lng:103.8607, cat:"spot" },
+      { name:"Gardens by the Bay", lat:1.2816, lng:103.8636, cat:"spot" }
     ],
     shopping: [],
     tickets: [],
+    albumPhotos: [],
     days: {}
   };
 
@@ -774,12 +813,19 @@
     const urlRe = /(https?:\/\/[^\s]+)/g;
     return str.replace(urlRe, (u)=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
   }
-
   function iconLabel(v){
     return ({
       none:"", meal:"🍽", leisure:"🎡", snack:"🍰", shopping:"🛍",
       hotel:"🏨", move:"🚕", spot:"📍", note:"📝"
     }[v] || "");
+  }
+  async function fileToDataURL(file){
+    return new Promise((res, rej)=>{
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
   }
 
   // =========================
@@ -795,8 +841,6 @@
     tabs.style.display = "none";
     document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行のしおり";
     document.getElementById("headerSub").textContent = "トップページ";
-closeFooterMenu();
-
   }
   function showSg(){
     viewTop.classList.remove("active");
@@ -805,8 +849,6 @@ closeFooterMenu();
     document.getElementById("headerTitle").textContent = "夏輝＆和音｜旅行プラン";
     document.getElementById("headerSub").textContent = "シンガポール旅行（2026/02/07〜02/14）";
     activateTab("day");
-closeFooterMenu();
-
   }
 
   document.getElementById("goSingaporeBtn").addEventListener("click", showSg);
@@ -825,49 +867,13 @@ closeFooterMenu();
 
     if(key==="map") renderMap();
     if(key==="mrt") renderMrtUi();
-closeFooterMenu();
-
+    if(key==="album") renderAlbum();
   }
   tabs.addEventListener("click", (e)=>{
     const t = e.target.closest(".tab");
     if(!t) return;
     activateTab(t.dataset.tab);
   });
-
-// =========================
-// Footer menu toggle（メニュー自動で閉じる）
-// =========================
-const toggleFooterBtn = document.getElementById("toggleFooterBtn");
-const footerBody = document.getElementById("footerBody");
-
-function closeFooterMenu(){
-  if(!footerBody) return;
-  footerBody.classList.add("hidden");
-}
-function openFooterMenu(){
-  if(!footerBody) return;
-  footerBody.classList.remove("hidden");
-}
-
-// トグル
-toggleFooterBtn?.addEventListener("click", (e)=>{
-  e.stopPropagation();
-  footerBody.classList.toggle("hidden");
-});
-
-// メニュー外クリックで閉じる
-document.addEventListener("click", (e)=>{
-  const footer = document.querySelector(".footerbar");
-  if(!footer) return;
-  if(footer.contains(e.target)) return;
-  closeFooterMenu();
-});
-
-// スクロールで閉じる
-window.addEventListener("scroll", ()=>{
-  closeFooterMenu();
-}, { passive:true });
-
 
   // =========================
   // Photo panel toggle
@@ -900,7 +906,7 @@ window.addEventListener("scroll", ()=>{
 
   function renderPhotos(){
     photoList.innerHTML = "";
-    if(topState.photos.length===0){
+    if((topState.photos||[]).length===0){
       photoList.innerHTML = `<div class="muted" style="margin-top:10px">まだ写真がありません（登録すると背景が流れる）</div>`;
     } else {
       topState.photos.slice().reverse().forEach((src, idxFromEnd)=>{
@@ -945,7 +951,7 @@ window.addEventListener("scroll", ()=>{
 
   function renderHeroBg(){
     heroBg.innerHTML = "";
-    const photos = topState.photos.length ? topState.photos : [
+    const photos = (topState.photos && topState.photos.length) ? topState.photos : [
       "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
         <svg xmlns='http://www.w3.org/2000/svg' width='800' height='560'>
           <defs>
@@ -963,19 +969,11 @@ window.addEventListener("scroll", ()=>{
     heroBg.appendChild(buildMarqueeTrack(photos, "track2"));
   }
 
-  async function fileToDataURL(file){
-    return new Promise((res, rej)=>{
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
-  }
-
   document.getElementById("addPhotosBtn").addEventListener("click", async ()=>{
     const files = Array.from(photoInput.files || []);
     if(files.length===0) return flash("写真を選んでね");
 
+    topState.photos = topState.photos || [];
     const allow = 12 - topState.photos.length;
     const use = files.slice(0, Math.max(0, allow));
     if(use.length===0) return flash("写真は最大12枚まで");
@@ -1026,6 +1024,7 @@ window.addEventListener("scroll", ()=>{
 
   async function initSupabase(){
     if(!(await canUseSupabase())) return null;
+    if(sbClient) return sbClient;
     sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return sbClient;
   }
@@ -1084,10 +1083,12 @@ window.addEventListener("scroll", ()=>{
 
   async function enableRealtime(){
     if(!sbClient || !state.share.enabled) return;
+
     if(shareRealtime) {
       try { await sbClient.removeChannel(shareRealtime); } catch(_){}
       shareRealtime = null;
     }
+
     shareRealtime = sbClient.channel("trip_sync_" + state.share.code)
       .on("postgres_changes",
         { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + state.share.code },
@@ -1112,7 +1113,7 @@ window.addEventListener("scroll", ()=>{
   }
 
   // =========================
-  // Day plans (time dropdown + icon + sort)
+  // Day plans
   // =========================
   const daySelect = document.getElementById("daySelect");
   const dayMemo = document.getElementById("dayMemo");
@@ -1269,7 +1270,7 @@ window.addEventListener("scroll", ()=>{
   });
 
   // =========================
-  // MRT image viewer (pan/zoom)
+  // MRT image viewer (pan/zoom) + fit
   // =========================
   const mrtViewer = document.getElementById("mrtViewer");
   const mrtImg = document.getElementById("mrtImg");
@@ -1285,9 +1286,24 @@ window.addEventListener("scroll", ()=>{
     mrtImg.style.transform = `translate(${mrtX}px,${mrtY}px) scale(${mrtZ})`;
   }
 
-  function mrtReset(){
-    mrtZ = 1; mrtX = 0; mrtY = 0;
+  function mrtFit(){
+    if(!mrtViewer || !mrtImg) return;
+    const vw = mrtViewer.clientWidth;
+    const vh = mrtViewer.clientHeight;
+
+    const iw = mrtImg.naturalWidth || 1;
+    const ih = mrtImg.naturalHeight || 1;
+
+    const scale = Math.min(vw / iw, vh / ih);
+    mrtZ = Math.min(6, Math.max(0.1, scale));
+
+    mrtX = (vw - iw * mrtZ) / 2;
+    mrtY = (vh - ih * mrtZ) / 2;
     applyMrtTransform();
+  }
+
+  function mrtReset(){
+    mrtFit();
   }
 
   function mrtZoom(delta, center=null){
@@ -1312,6 +1328,8 @@ window.addEventListener("scroll", ()=>{
   if(mrtZoomIn) mrtZoomIn.addEventListener("click", ()=>mrtZoom(1.2));
   if(mrtZoomOut) mrtZoomOut.addEventListener("click", ()=>mrtZoom(1/1.2));
   if(mrtZoomReset) mrtZoomReset.addEventListener("click", mrtReset);
+
+  mrtImg?.addEventListener("load", ()=>{ mrtFit(); });
 
   if(mrtViewer){
     mrtViewer.addEventListener("wheel", (e)=>{
@@ -1346,9 +1364,10 @@ window.addEventListener("scroll", ()=>{
     if(mrtFreeMemo){
       mrtFreeMemo.value = (state.mrt && state.mrt.freeMemo) ? state.mrt.freeMemo : "";
     }
+    // タブを開いたタイミングでもfit（iPhoneでサイズ確定が遅い時に効く）
+    setTimeout(mrtFit, 0);
   }
 
-  // MRT free memo
   document.getElementById("saveMrtFreeMemoBtn")?.addEventListener("click", async ()=>{
     const mrtFreeMemo = document.getElementById("mrtFreeMemo");
     state.mrt = state.mrt || {};
@@ -1367,15 +1386,25 @@ window.addEventListener("scroll", ()=>{
   });
 
   // =========================
-  // Google Maps: load once + fast init + language switch
+  // Google Maps: load once + init + language switch
   // =========================
   let gmap = null;
   let gmarkers = [];
   let geocoder = null;
 
   function mapCenter(){
-    // Singapore中心
     return { lat: 1.2897, lng: 103.8501 };
+  }
+
+  function pinColor(cat){
+    return ({
+      meal: "#ef4444",
+      spot: "#4f46e5",
+      shopping: "#06b6d4",
+      hotel: "#f59e0b",
+      move: "#10b981",
+      note: "#64748b"
+    }[cat] || "#4f46e5");
   }
 
   function clearMarkers(){
@@ -1389,13 +1418,24 @@ window.addEventListener("scroll", ()=>{
 
     (state.pins || []).forEach(p=>{
       if(typeof p.lat !== "number" || typeof p.lng !== "number") return;
+
       const m = new google.maps.Marker({
         position: {lat:p.lat, lng:p.lng},
         map: gmap,
-        title: p.name || ""
+        title: p.name || "",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: pinColor(p.cat),
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2
+        }
       });
+
       const info = new google.maps.InfoWindow({
-        content: `<div style="font-weight:800">🚩 ${escapeHtml(p.name || "")}</div>`
+        content: `<div style="font-weight:800">🚩 ${escapeHtml(p.name || "")}</div>
+                  <div style="margin-top:6px;font-size:12px;color:#64748b">カテゴリ：${escapeHtml(p.cat||"spot")}</div>`
       });
       m.addListener("click", ()=>info.open({anchor:m, map:gmap}));
       gmarkers.push(m);
@@ -1419,6 +1459,7 @@ window.addEventListener("scroll", ()=>{
       left.className="meta";
       left.innerHTML = `
         <div class="t">🚩 ${escapeHtml(p.name)}</div>
+        <div class="tag">カテゴリ：${escapeHtml(p.cat||"spot")}</div>
         <div class="s">${(p.lat && p.lng) ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : ""}</div>
       `;
 
@@ -1455,7 +1496,8 @@ window.addEventListener("scroll", ()=>{
 
   async function addPin(lat, lng, name){
     const nm = (name || "").trim() || "ピン";
-    state.pins.unshift({ name: nm, lat, lng, createdAt: Date.now() });
+    const cat = (document.getElementById("pinCat")?.value || "spot");
+    state.pins.unshift({ name: nm, lat, lng, cat, createdAt: Date.now() });
     await ensureSync("旗追加");
     renderPinsOnGmap();
     renderPinList();
@@ -1528,22 +1570,20 @@ window.addEventListener("scroll", ()=>{
     }catch(e){
       flash("地図：APIキー未設定/読込失敗");
       console.warn(e);
-      // リストだけは出す
       renderPinList();
     }
   }
 
   document.getElementById("hintTapBtn")?.addEventListener("click", ()=>{
-    alert("地図の好きな場所をタップ → 旗の名前を入力 → 追加されます");
+    alert("地図の好きな場所をタップ → 旗の名前を入力 → 追加されます（カテゴリは選択中のもの）");
   });
 
-  // 住所から旗
   document.getElementById("addPinByAddressBtn")?.addEventListener("click", async ()=>{
     const addr = (document.getElementById("pinAddress")?.value || "").trim();
     const nmIn = (document.getElementById("pinName2")?.value || "").trim();
     if(!addr) return flash("住所/施設名を入れてね");
 
-    await renderMap(); // map/geo準備
+    await renderMap();
 
     if(!(window.google && google.maps && geocoder)){
       return flash("地図がまだ使えない（APIキー）");
@@ -1571,9 +1611,7 @@ window.addEventListener("scroll", ()=>{
     }
   });
 
-  // 言語反映（= 再読み込み）
   document.getElementById("reloadMapBtn")?.addEventListener("click", ()=>{
-    // Google Mapsは language を後から切替できないのでリロード方式
     if(confirm("地図の言語を反映するためページを再読み込みします。OK？")){
       location.reload();
     }
@@ -1589,7 +1627,7 @@ window.addEventListener("scroll", ()=>{
 
   function renderShop(){
     shopList.innerHTML = "";
-    if(state.shopping.length===0){
+    if((state.shopping||[]).length===0){
       shopList.innerHTML = `<div class="muted" style="margin-top:10px">まだありません</div>`;
       return;
     }
@@ -1654,7 +1692,7 @@ window.addEventListener("scroll", ()=>{
   const ticketList = document.getElementById("ticketList");
   function renderTickets(){
     ticketList.innerHTML = "";
-    if(state.tickets.length===0){
+    if((state.tickets||[]).length===0){
       ticketList.innerHTML = `<div class="muted" style="margin-top:10px">まだありません</div>`;
       return;
     }
@@ -1702,6 +1740,139 @@ window.addEventListener("scroll", ()=>{
   });
 
   // =========================
+  // Album
+  // =========================
+  const albumInput = document.getElementById("albumInput");
+  const albumList = document.getElementById("albumList");
+  const slideModal = document.getElementById("slideModal");
+  const slideImg = document.getElementById("slideImg");
+  const slideInfo = document.getElementById("slideInfo");
+  let slideIdx = 0;
+  let slideTimer = null;
+
+  function renderAlbum(){
+    if(!albumList) return;
+    state.albumPhotos = state.albumPhotos || [];
+    const arr = state.albumPhotos;
+
+    albumList.innerHTML = "";
+    if(arr.length===0){
+      albumList.innerHTML = `<div class="muted" style="margin-top:10px">まだありません</div>`;
+      return;
+    }
+
+    arr.slice().reverse().forEach((src, iFromEnd)=>{
+      const idx = arr.length - 1 - iFromEnd;
+      const el = document.createElement("div");
+      el.className="item";
+      el.innerHTML = `
+        <div style="width:90px;height:60px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+          <img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block" />
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn secondary" data-open="${idx}">見る</button>
+          <button class="btn danger" data-del="${idx}">削除</button>
+        </div>
+      `;
+      albumList.appendChild(el);
+    });
+
+    albumList.querySelectorAll("[data-del]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const idx = Number(btn.dataset.del);
+        state.albumPhotos.splice(idx,1);
+        await ensureSync("アルバム削除");
+        renderAlbum();
+      });
+    });
+
+    albumList.querySelectorAll("[data-open]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        openSlide(Number(btn.dataset.open));
+      });
+    });
+  }
+
+  function showSlide(){
+    const arr = state.albumPhotos || [];
+    if(arr.length===0) return;
+    slideImg.src = arr[slideIdx];
+    slideInfo.textContent = `${slideIdx+1} / ${arr.length}`;
+  }
+
+  function openSlide(idx){
+    const arr = state.albumPhotos || [];
+    if(arr.length===0) return;
+    slideIdx = Math.max(0, Math.min(idx, arr.length-1));
+    slideModal.classList.remove("hidden");
+    showSlide();
+  }
+
+  function stopAuto(){
+    if(slideTimer) clearInterval(slideTimer);
+    slideTimer = null;
+  }
+
+  function closeSlide(){
+    slideModal.classList.add("hidden");
+    stopAuto();
+  }
+
+  function nextSlide(){
+    const arr = state.albumPhotos || [];
+    if(arr.length===0) return;
+    slideIdx = (slideIdx + 1) % arr.length;
+    showSlide();
+  }
+
+  function prevSlide(){
+    const arr = state.albumPhotos || [];
+    if(arr.length===0) return;
+    slideIdx = (slideIdx - 1 + arr.length) % arr.length;
+    showSlide();
+  }
+
+  function startAuto(){
+    stopAuto();
+    slideTimer = setInterval(nextSlide, 2500);
+  }
+
+  document.getElementById("addAlbumBtn")?.addEventListener("click", async ()=>{
+    const files = Array.from(albumInput?.files || []);
+    if(files.length===0) return flash("写真を選んでね");
+
+    state.albumPhotos = state.albumPhotos || [];
+    for(const f of files.slice(0, 30)){
+      const dataUrl = await fileToDataURL(f);
+      state.albumPhotos.push(dataUrl);
+    }
+    albumInput.value="";
+    await ensureSync("アルバム追加");
+    renderAlbum();
+    flash("追加した");
+  });
+
+  document.getElementById("clearAlbumBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("アルバムを全部消す？")) return;
+    state.albumPhotos = [];
+    await ensureSync("アルバム全削除");
+    renderAlbum();
+  });
+
+  document.getElementById("playSlideBtn")?.addEventListener("click", ()=>{
+    openSlide(0);
+    startAuto();
+  });
+
+  document.getElementById("closeSlideBtn")?.addEventListener("click", closeSlide);
+  document.getElementById("nextSlideBtn")?.addEventListener("click", ()=>{ stopAuto(); nextSlide(); });
+  document.getElementById("prevSlideBtn")?.addEventListener("click", ()=>{ stopAuto(); prevSlide(); });
+
+  slideModal?.addEventListener("click", (e)=>{
+    if(e.target === slideModal) closeSlide();
+  });
+
+  // =========================
   // Share UI
   // =========================
   document.getElementById("connectShareBtn").addEventListener("click", async ()=>{
@@ -1723,7 +1894,9 @@ window.addEventListener("scroll", ()=>{
     setSyncLabel("保存：共有（接続中）");
     logShare("共有を有効化：" + code);
 
+    // 先にpull（あれば取り込む）
     await pullFromCloud();
+    // 今の状態をpush（初回作成にもなる）
     await pushToCloud("共有開始");
     await enableRealtime();
     await ensureSync("共有開始");
@@ -1746,46 +1919,6 @@ window.addEventListener("scroll", ()=>{
   });
 
   // =========================
-  // Export / Import / Reset
-  // =========================
-  document.getElementById("exportBtn").addEventListener("click", ()=>{
-    const json = JSON.stringify({ topState, tripState: state }, null, 2);
-    navigator.clipboard.writeText(json).then(()=>{
-      flash("JSONをコピーした");
-    }).catch(()=>{
-      prompt("このJSONをコピーして保存してね", json);
-    });
-  });
-
-  document.getElementById("importBtn").addEventListener("click", async ()=>{
-    const raw = prompt("貼り付けるJSONを入れてOK");
-    if(!raw) return;
-    try{
-      const obj = JSON.parse(raw);
-      if(obj.topState) topState = { ...structuredClone(defaultTopState), ...obj.topState };
-      if(obj.tripState) state = { ...structuredClone(defaultTripState), ...obj.tripState };
-      saveJson(TOP_KEY, topState);
-      saveJson(TRIP_LOCAL_KEY, state);
-      bootTopRender();
-      bootTripRender();
-      flash("インポート完了");
-    }catch(e){
-      flash("JSONが壊れてるっぽい");
-    }
-  });
-
-  document.getElementById("resetBtn").addEventListener("click", async ()=>{
-    if(!confirm("全部消す？（戻せない）")) return;
-    topState = structuredClone(defaultTopState);
-    state = structuredClone(defaultTripState);
-    saveJson(TOP_KEY, topState);
-    saveJson(TRIP_LOCAL_KEY, state);
-    bootTopRender();
-    bootTripRender();
-    flash("全削除した");
-  });
-
-  // =========================
   // Boot
   // =========================
   function bootTopRender(){
@@ -1802,16 +1935,18 @@ window.addEventListener("scroll", ()=>{
     renderPlans();
     renderShop();
     renderTickets();
+    renderAlbum();
     document.getElementById("shareCode").value = state.share.code || "";
     setSyncLabel(state.share.enabled ? "保存：共有" : "保存：ローカル");
   }
 
-  // start at TOP
+  // start
   showTop();
   bootTopRender();
   bootTripRender();
-
 </script>
+
+<!-- Service Worker -->
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -1822,4 +1957,3 @@ window.addEventListener("scroll", ()=>{
 
 </body>
 </html>
-
