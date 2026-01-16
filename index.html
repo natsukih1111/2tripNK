@@ -1034,11 +1034,14 @@
     .eq("id", FIXED_DOC_ID)
     .maybeSingle(); // ←これ
 
-  if(error){
-    logShare("クラウド取得エラー：" + error.message);
-    console.warn("pullFromCloud error:", error);
-    return false;
-  }
+if(error){
+  const msg = `クラウド取得エラー：${error.message} / code=${error.code || ""} / details=${error.details || ""}`;
+  logShare(msg);
+  alert(msg); // ←Bで確実に見えるように
+  console.warn("pullFromCloud error:", error);
+  return false;
+}
+
   if(!data){
     logShare("クラウドにデータ無し（id=" + FIXED_DOC_ID + "）");
     return false;
