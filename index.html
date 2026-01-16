@@ -1112,7 +1112,6 @@ if(error){
   if (ok) flash("共有：更新を反映");
   else flash("共有：取得失敗（重複/権限/通信）");
 }
-  }
 )
       .subscribe((status) => {
         console.log("📡 REALTIME STATUS:", status, "channel=", channelName);
