@@ -1087,15 +1087,20 @@ if(!data){
     shareRealtime = sbClient
       .channel(channelName)
       .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + FIXED_DOC_ID },
-        async (payload) => {
-          console.log("✅ REALTIME EVENT:", payload);
-          logShare("✅ Realtimeイベント受信");
-          await pullFromCloud();
-          flash("共有：更新を反映");
-        }
-      )
+  "postgres_changes",
+  { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + FIXED_DOC_ID },
+  async (payload) => {
+    console.log("✅ REALTIME EVENT:", payload);
+    logShare("✅ Realtimeイベント受信");
+
+    const ok = await pullFromCloud();
+    if(ok){
+      flash("共有：更新を反映");
+    }else{
+      flash("共有：取得失敗（重複/権限/通信）");
+    }
+  }
+)
       .subscribe((status) => {
         console.log("📡 REALTIME STATUS:", status, "channel=", channelName);
         logShare("📡 リアルタイム：" + status);
