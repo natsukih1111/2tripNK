@@ -1069,13 +1069,14 @@ if(error){
       .from(SHARE_TABLE)
       .upsert(payload, { onConflict: "id" });
 
-    if(error){
-      logShare("クラウド保存エラー：" + error.message);
-      return false;
-    }
-    logShare("クラウドに保存しました（" + reason + "）");
-    return true;
-  }
+if(error){
+  const msg = `クラウド取得エラー：${error.message} / code=${error.code || ""} / details=${error.details || ""}`;
+  logShare(msg);
+  alert(msg); // ←Bで確実に見えるように
+  console.warn("pullFromCloud error:", error);
+  return false;
+}
+
 
   async function enableRealtime(){
     if(!sbClient) return;
