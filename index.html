@@ -1026,29 +1026,32 @@
   }
 
   async function pullFromCloud(){
-    if(!sbClient) return false;
+  if(!sbClient) return false;
 
-    const { data, error } = await sbClient
-      .from(SHARE_TABLE)
-      .select("data,updated_at")
-      .eq("id", FIXED_DOC_ID)
-      .maybeSingle();
+  const { data, error } = await sbClient
+    .from(SHARE_TABLE)
+    .select("data, updated_at")
+    .eq("id", FIXED_DOC_ID)
+　　.maybeSingle();
 
-    if(error){
-      logShare("クラウド取得エラー：" + error.message);
-      return false;
-    }
-    if(!data){
-      logShare("クラウドにまだデータ無し（初回作成します）");
-      return false;
-    }
+if(!data){
+  logShare("クラウドにまだデータ無し（初回作成します）");
+  return false;
+}
 
-    state = { ...structuredClone(defaultTripState), ...data.data };
-    saveJson(TRIP_LOCAL_KEY, state);
-    bootTripRender();
-    logShare("クラウドから同期しました");
-    return true;
+  if(error){
+    logShare("クラウド取得エラー：" + error.message);
+    return false;
   }
+
+  state = { ...structuredClone(defaultTripState), ...data.data };
+  saveJson(TRIP_LOCAL_KEY, state);
+
+  rerenderAll(); // ← ★これが決定打
+  logShare("クラウドから同期しました");
+  return true;
+}
+
 
   async function pushToCloud(reason="更新"){
     if(!sbClient) return false;
@@ -1112,6 +1115,22 @@
       setSyncLabel("保存：ローカル");
     }
   }
+
+function rerenderAll(){
+  // daySelectがまだ埋まってない場合は、初期化を先にする
+  if(!daySelect?.value){
+    renderDaySelect();
+    daySelect.value = DATES[0];
+  }
+
+  renderPlans();
+  renderShop();
+  renderTickets();
+  renderAlbum();
+  renderPinsOnGmap();
+  renderPinList();
+}
+
 
   // =========================
   // Day plans
