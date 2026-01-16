@@ -6,17 +6,17 @@
   <title>夏輝＆和音｜旅行のしおり</title>
 
   <!-- Supabase（夫婦共有同期） -->
- <script src="./supabase.js"></script>
+  <script src="./supabase.js"></script>
 
   <!-- Google Maps（キー必要） -->
   <script>
-    // ★ここにGoogle MapsのAPIキーを入れる（必須）
     const GMAPS_API_KEY = "AIzaSyC0PgEopaVfIHTSH8FLx0hHOPVt-EoeaPk";
   </script>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
 
   <!-- iPhone用（Safariでホーム追加した時の見え方） -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -295,11 +295,11 @@
         <h1 id="headerTitle">夏輝＆和音｜旅行のしおり</h1>
         <p id="headerSub">トップページ</p>
       </div>
-      <div class="pill" id="syncState">保存：ローカル</div>
+      <div class="pill" id="syncState">保存：準備中</div>
       <button class="btn secondary" id="goHomeBtn">🏠 ホーム</button>
     </div>
 
-    <!-- シンガポール詳細のときだけ出す -->
+    <!-- シンガポール詳細のときだけ出す（共有タブは削除） -->
     <div class="tabs" id="tabs" style="display:none">
       <div class="tab active" data-tab="day">日付毎のプラン</div>
       <div class="tab" data-tab="mrt">mrt_map</div>
@@ -307,7 +307,6 @@
       <div class="tab" data-tab="shop">買い物予定</div>
       <div class="tab" data-tab="ticket">チケット</div>
       <div class="tab" data-tab="album">アルバム</div>
-      <div class="tab" data-tab="share">共有（夫婦同期）</div>
     </div>
   </div>
 </header>
@@ -354,7 +353,7 @@
     <div class="grid twoeq">
       <div class="card glass">
         <h2>旅行一覧</h2>
-        <div class="muted">旅行を追加する機能は次で追加できる（今はシンガポール固定）</div>
+        <div class="muted">今はシンガポール固定</div>
         <div class="list">
           <div class="item">
             <div class="meta">
@@ -375,7 +374,7 @@
           ・mrt_mapを拡大して見る<br/>
           ・地図をタップして旗を立てる／住所から旗もOK<br/>
           ・アルバムに写真を入れてスライドショー<br/>
-          ・共有をONにすると夫婦で同期（Supabase）<br/>
+          ・二人の内容は自動同期（Supabase）<br/>
         </div>
       </div>
     </div>
@@ -520,6 +519,12 @@
             <button class="btn" id="saveMrtFreeMemoBtn">保存</button>
             <button class="btn danger" id="clearMrtFreeMemoBtn">消す</button>
           </div>
+
+          <!-- 同期ログ（小さくここに置く：共有タブは無し） -->
+          <div style="height:14px"></div>
+          <h2>同期ログ</h2>
+          <div class="muted">（Supabaseがある時だけ自動同期）</div>
+          <div class="list" id="shareLog"></div>
         </div>
       </div>
     </section>
@@ -660,7 +665,7 @@
             <button class="btn secondary" id="playSlideBtn">▶ スライドショー</button>
           </div>
           <div class="muted" style="margin-top:10px">
-            ※写真は端末内に保存（共有ONでも写真は重くなるので基本ローカル推奨）
+            ※写真は端末内に保存（共有して重くなるので基本ローカル推奨）
           </div>
         </div>
 
@@ -692,42 +697,6 @@
       </div>
     </section>
 
-    <!-- 共有（夫婦同期） -->
-    <section class="section" id="section-share">
-      <div class="grid two">
-        <div class="card">
-          <h2>夫婦共有（同期）</h2>
-          <div class="muted">
-            同じ「共有コード」で同じ旅データを見られる。<br/>
-            ※Supabase未設定ならローカルのまま動く
-          </div>
-
-          <div style="height:10px"></div>
-          <label class="muted">共有コード（例：natsuki-kazune-sg2026）</label>
-          <input id="shareCode" placeholder="例：natsuki-kazune-sg2026" />
-
-          <div style="height:8px"></div>
-          <label class="muted">合言葉（パス）</label>
-          <input id="sharePass" type="password" placeholder="夫婦だけが知ってるやつ" />
-
-          <div class="row" style="justify-content:space-between;margin-top:10px">
-            <button class="btn" id="connectShareBtn">共有で使う</button>
-            <button class="btn secondary" id="disconnectShareBtn">ローカルに戻す</button>
-          </div>
-
-          <div style="height:12px"></div>
-          <div class="muted">
-            仕組み：クラウド上に旅データ(JSON)を1つ保存して両端末で同期。
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>同期ログ</h2>
-          <div class="list" id="shareLog"></div>
-        </div>
-      </div>
-    </section>
-
   </section>
 
   <div class="toast" id="toast">保存しました</div>
@@ -735,17 +704,20 @@
 
 <script>
   // =========================
-  // Supabase 設定（使う場合だけ入れる）
+  // Supabase 設定
   // =========================
   const SUPABASE_URL = "https://wrdxpnsevzlbbnwqjdwf.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_j0ELdUy642C8My25peJXpg_MOzrTXS0";
   const SHARE_TABLE = "trip_docs";
 
+  // 夫婦だけ利用：共有コード/合言葉なし、固定ドキュメント1つに統一
+  const FIXED_DOC_ID = "sg_2026";
+
   // =========================
-  // State
+  // State Keys（※ここは固定にする）
   // =========================
-  const TOP_KEY = "natsu_kazu_top_v1";
-  const TRIP_LOCAL_KEY = "trip_sg_2026_natsuki_kazune_v6_pwa_album";
+  const TOP_KEY = "natsu_kazu_top";
+  const TRIP_LOCAL_KEY = "trip_sg_2026_natsuki_kazune";
 
   const defaultTopState = {
     photos: [],
@@ -754,7 +726,6 @@
 
   const defaultTripState = {
     meta: { trip: "Singapore", start:"2026-02-07", end:"2026-02-14" },
-    share: { enabled:false, code:"", passHash:"" },
     mrt: { freeMemo:"" },
     pins: [
       { name:"Changi Airport", lat:1.3644, lng:103.9915, cat:"move" },
@@ -779,9 +750,6 @@
     return out;
   })(defaultTripState.meta.start, defaultTripState.meta.end);
 
-  let topState = loadJson(TOP_KEY, defaultTopState);
-  let state = loadJson(TRIP_LOCAL_KEY, defaultTripState);
-
   // =========================
   // Helpers
   // =========================
@@ -803,7 +771,10 @@
     t.classList.add("show");
     setTimeout(()=>t.classList.remove("show"), 1200);
   }
-  function setSyncLabel(text){ document.getElementById("syncState").textContent = text; }
+  function setSyncLabel(text){
+    const el = document.getElementById("syncState");
+    if(el) el.textContent = text;
+  }
   function escapeHtml(str){
     return String(str).replace(/[&<>"']/g, s => ({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -827,6 +798,40 @@
       r.readAsDataURL(file);
     });
   }
+
+  function logShare(msg){
+    const box = document.getElementById("shareLog");
+    if(!box){
+      console.log("SYNC:", msg);
+      return;
+    }
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `<div class="meta"><div class="t">🧷 ログ</div><div class="s">${escapeHtml(msg)}</div></div>`;
+    box.prepend(el);
+  }
+
+  // =========================
+  // Migration（古いキーが残ってたら引っ越し）
+  // =========================
+  (function migrateOldKeys(){
+    const candidates = [
+      "trip_sg_2026_natsuki_kazune_v5_gmap",
+      "trip_sg_2026_natsuki_kazune_v6_pwa_album"
+    ];
+    if(localStorage.getItem(TRIP_LOCAL_KEY)) return;
+    for(const k of candidates){
+      const raw = localStorage.getItem(k);
+      if(raw){
+        localStorage.setItem(TRIP_LOCAL_KEY, raw);
+        console.log("✅ migrated from", k, "to", TRIP_LOCAL_KEY);
+        break;
+      }
+    }
+  })();
+
+  let topState = loadJson(TOP_KEY, defaultTopState);
+  let state = loadJson(TRIP_LOCAL_KEY, defaultTripState);
 
   // =========================
   // View Navigation (Top <-> SG)
@@ -999,58 +1004,34 @@
   });
 
   // =========================
-  // Trip persistence (local + share)
+  // Supabase（固定同期）
   // =========================
   let sbClient = null;
   let shareRealtime = null;
-
-  async function sha256(text){
-    const enc = new TextEncoder().encode(text);
-    const digest = await crypto.subtle.digest("SHA-256", enc);
-    return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
-  }
-
-  function logShare(msg){
-    const box = document.getElementById("shareLog");
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML = `<div class="meta"><div class="t">🧷 ログ</div><div class="s">${escapeHtml(msg)}</div></div>`;
-    box.prepend(el);
-  }
+  let cloudReady = false;
 
   async function canUseSupabase(){
     return !!(window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY);
   }
 
   async function initSupabase(){
-  if(!(await canUseSupabase())) return null;
-  if(sbClient) return sbClient;
+    if(!(await canUseSupabase())) return null;
+    if(sbClient) return sbClient;
 
-  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    },
-    realtime: {
-      params: { eventsPerSecond: 10 }
-    }
-  });
-
-  return sbClient;
-}
-
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false },
+      realtime: { params: { eventsPerSecond: 10 } }
+    });
+    return sbClient;
+  }
 
   async function pullFromCloud(){
-    if(!sbClient || !state.share.enabled) return false;
-    const id = state.share.code;
-    const pass_hash = state.share.passHash;
+    if(!sbClient) return false;
 
     const { data, error } = await sbClient
       .from(SHARE_TABLE)
       .select("data,updated_at")
-      .eq("id", id)
-      .eq("pass_hash", pass_hash)
+      .eq("id", FIXED_DOC_ID)
       .maybeSingle();
 
     if(error){
@@ -1058,7 +1039,7 @@
       return false;
     }
     if(!data){
-      logShare("クラウドにまだデータ無し（初回作成になります）");
+      logShare("クラウドにまだデータ無し（初回作成します）");
       return false;
     }
 
@@ -1070,13 +1051,10 @@
   }
 
   async function pushToCloud(reason="更新"){
-    if(!sbClient || !state.share.enabled) return false;
-    const id = state.share.code;
-    const pass_hash = state.share.passHash;
+    if(!sbClient) return false;
 
     const payload = {
-      id,
-      pass_hash,
+      id: FIXED_DOC_ID,
       data: state,
       updated_at: new Date().toISOString()
     };
@@ -1094,40 +1072,42 @@
   }
 
   async function enableRealtime(){
-  if(!sbClient || !state.share.enabled) return;
+    if(!sbClient) return;
 
-  if(shareRealtime) {
-    try { await sbClient.removeChannel(shareRealtime); } catch(_){}
-    shareRealtime = null;
+    if(shareRealtime) {
+      try { await sbClient.removeChannel(shareRealtime); } catch(_){}
+      shareRealtime = null;
+    }
+
+    const channelName = "trip_sync_fixed_" + FIXED_DOC_ID;
+
+    shareRealtime = sbClient
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + FIXED_DOC_ID },
+        async (payload) => {
+          console.log("✅ REALTIME EVENT:", payload);
+          logShare("✅ Realtimeイベント受信");
+          await pullFromCloud();
+          flash("共有：更新を反映");
+        }
+      )
+      .subscribe((status) => {
+        console.log("📡 REALTIME STATUS:", status, "channel=", channelName);
+        logShare("📡 リアルタイム：" + status);
+      });
   }
 
-  const channelName = "trip_sync_" + state.share.code;
-
-  shareRealtime = sbClient
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: SHARE_TABLE, filter: "id=eq." + state.share.code },
-      async (payload) => {
-        console.log("✅ REALTIME EVENT:", payload);
-        logShare("✅ Realtimeイベント受信");
-        await pullFromCloud();
-        flash("共有：更新を反映");
-      }
-    )
-    .subscribe((status) => {
-      console.log("📡 REALTIME STATUS:", status, "channel=", channelName);
-      logShare("📡 リアルタイム：" + status);
-    });
-}
-
-
   async function ensureSync(reason="更新"){
+    // まずローカル保存（オフライン保険）
     saveJson(TRIP_LOCAL_KEY, state);
-    if(state.share.enabled){
-      setSyncLabel("保存：共有（同期中）");
+
+    // クラウドが使えるなら自動同期
+    if(sbClient && cloudReady){
+      setSyncLabel("保存：同期中");
       await pushToCloud(reason);
-      setSyncLabel("保存：共有");
+      setSyncLabel("保存：同期");
     }else{
       setSyncLabel("保存：ローカル");
     }
@@ -1285,7 +1265,7 @@
     ensureDay(date);
     state.days[date].memo = dayMemo.value;
     saveJson(TRIP_LOCAL_KEY, state);
-    setSyncLabel(state.share.enabled ? "保存：共有（編集中）" : "保存：ローカル（編集中）");
+    setSyncLabel(sbClient && cloudReady ? "保存：同期（編集中）" : "保存：ローカル（編集中）");
     clearTimeout(window.__memoTimer);
     window.__memoTimer = setTimeout(async ()=>{ await ensureSync("日付メモ更新"); }, 700);
   });
@@ -1323,9 +1303,7 @@
     applyMrtTransform();
   }
 
-  function mrtReset(){
-    mrtFit();
-  }
+  function mrtReset(){ mrtFit(); }
 
   function mrtZoom(delta, center=null){
     const newZ = Math.min(6, Math.max(0.3, mrtZ * delta));
@@ -1346,9 +1324,9 @@
     applyMrtTransform();
   }
 
-  if(mrtZoomIn) mrtZoomIn.addEventListener("click", ()=>mrtZoom(1.2));
-  if(mrtZoomOut) mrtZoomOut.addEventListener("click", ()=>mrtZoom(1/1.2));
-  if(mrtZoomReset) mrtZoomReset.addEventListener("click", mrtReset);
+  mrtZoomIn?.addEventListener("click", ()=>mrtZoom(1.2));
+  mrtZoomOut?.addEventListener("click", ()=>mrtZoom(1/1.2));
+  mrtZoomReset?.addEventListener("click", mrtReset);
 
   mrtImg?.addEventListener("load", ()=>{ mrtFit(); });
 
@@ -1385,7 +1363,6 @@
     if(mrtFreeMemo){
       mrtFreeMemo.value = (state.mrt && state.mrt.freeMemo) ? state.mrt.freeMemo : "";
     }
-    // タブを開いたタイミングでもfit（iPhoneでサイズ確定が遅い時に効く）
     setTimeout(mrtFit, 0);
   }
 
@@ -1413,9 +1390,7 @@
   let gmarkers = [];
   let geocoder = null;
 
-  function mapCenter(){
-    return { lat: 1.2897, lng: 103.8501 };
-  }
+  function mapCenter(){ return { lat: 1.2897, lng: 103.8501 }; }
 
   function pinColor(cat){
     return ({
@@ -1894,52 +1869,6 @@
   });
 
   // =========================
-  // Share UI
-  // =========================
-  document.getElementById("connectShareBtn").addEventListener("click", async ()=>{
-    const code = document.getElementById("shareCode").value.trim();
-    const pass = document.getElementById("sharePass").value;
-    if(!code || !pass) return flash("共有コードと合言葉を入れてね");
-
-    if(!(await canUseSupabase())){
-      logShare("Supabase未設定：コード内のURL/KEYを設定してね");
-      return flash("Supabase未設定");
-    }
-
-    await initSupabase();
-
-    state.share.enabled = true;
-    state.share.code = code;
-    state.share.passHash = await sha256(pass);
-
-    setSyncLabel("保存：共有（接続中）");
-    logShare("共有を有効化：" + code);
-
-    // 先にpull（あれば取り込む）
-    await pullFromCloud();
-    // 今の状態をpush（初回作成にもなる）
-    await pushToCloud("共有開始");
-    await enableRealtime();
-    await ensureSync("共有開始");
-    flash("共有で使う");
-  });
-
-  document.getElementById("disconnectShareBtn").addEventListener("click", async ()=>{
-    state.share.enabled = false;
-    state.share.code = "";
-    state.share.passHash = "";
-    setSyncLabel("保存：ローカル");
-    logShare("共有を無効化（ローカルへ）");
-    saveJson(TRIP_LOCAL_KEY, state);
-
-    if(sbClient && shareRealtime){
-      try{ await sbClient.removeChannel(shareRealtime); }catch(_){}
-      shareRealtime = null;
-    }
-    flash("ローカルに戻した");
-  });
-
-  // =========================
   // Boot
   // =========================
   function bootTopRender(){
@@ -1957,14 +1886,38 @@
     renderShop();
     renderTickets();
     renderAlbum();
-    document.getElementById("shareCode").value = state.share.code || "";
-    setSyncLabel(state.share.enabled ? "保存：共有" : "保存：ローカル");
   }
 
   // start
   showTop();
   bootTopRender();
   bootTripRender();
+
+  // 起動時：クラウド優先で同期（なければ初回作成）
+  (async function bootCloud(){
+    setSyncLabel("保存：準備中");
+    if(!(await canUseSupabase())){
+      cloudReady = false;
+      setSyncLabel("保存：ローカル（Supabase未設定）");
+      logShare("Supabase未設定：ローカル保存で動作");
+      return;
+    }
+
+    await initSupabase();
+
+    // まずクラウドを取り込む（あれば）
+    const ok = await pullFromCloud();
+
+    // 無ければ初回作成（初期データ or 端末ローカルの状態）
+    if(!ok){
+      await pushToCloud("初回作成");
+      logShare("初回作成しました（固定ID=" + FIXED_DOC_ID + "）");
+    }
+
+    cloudReady = true;
+    await enableRealtime();
+    setSyncLabel("保存：同期");
+  })();
 </script>
 
 <!-- Service Worker -->
